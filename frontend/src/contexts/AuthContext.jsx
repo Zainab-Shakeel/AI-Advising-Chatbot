@@ -4,8 +4,6 @@ const AUTH_KEY = 'auth_user';
 
 export const ROLES = {
   STUDENT: 'student',
-  ACADEMIC_STAFF: 'academic_staff',
-  STUDENT_AFFAIRS: 'student_affairs',
   SYSTEM_ADMIN: 'system_admin',
 };
 
