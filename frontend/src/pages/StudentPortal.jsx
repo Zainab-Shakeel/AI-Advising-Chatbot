@@ -34,6 +34,20 @@ const GRADE_OPTIONS = [
 
 const initialCourse = { course: '', creditHours: '', grade: '' };
 
+function calculateGPAFromCourses(courseList) {
+  const valid = courseList.filter((c) => c.course.trim() && c.creditHours && c.grade !== '');
+  if (valid.length === 0) return null;
+  let totalPoints = 0;
+  let totalHours = 0;
+  for (const c of valid) {
+    const hours = parseFloat(c.creditHours) || 0;
+    const gradeValue = parseFloat(c.grade);
+    totalPoints += hours * gradeValue;
+    totalHours += hours;
+  }
+  return totalHours > 0 ? { gpa: (totalPoints / totalHours).toFixed(2), totalHours } : null;
+}
+
 export default function StudentPortal() {
   const [activeSection, setActiveSection] = useState('course_eligibility');
   const [message, setMessage] = useState('');
@@ -75,21 +89,12 @@ export default function StudentPortal() {
   };
 
   const calculateGPA = () => {
-    const valid = courses.filter((c) => c.course.trim() && c.creditHours && c.grade !== '');
-    if (valid.length === 0) {
+    const result = calculateGPAFromCourses(courses);
+    if (result) {
+      setGpaResult(result);
+    } else {
       setGpaResult({ error: 'Please enter at least one course with course name, credit hours, and grade.' });
-      return;
     }
-    let totalPoints = 0;
-    let totalHours = 0;
-    for (const c of valid) {
-      const hours = parseFloat(c.creditHours) || 0;
-      const gradeValue = typeof c.grade === 'string' ? parseFloat(c.grade) : c.grade;
-      totalPoints += hours * gradeValue;
-      totalHours += hours;
-    }
-    const gpa = totalHours > 0 ? totalPoints / totalHours : 0;
-    setGpaResult({ gpa: gpa.toFixed(2), totalHours });
   };
 
   return (

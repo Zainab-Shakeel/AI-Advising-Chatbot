@@ -102,7 +102,7 @@ export default function Signup() {
       <div className="signup-card">
         <div className="signup-header">
           <h1>Create Account</h1>
-          <p className="signup-subtitle">University Portal Registration</p>
+          <p className="signup-subtitle">Tawjeeh Bot Registration</p>
         </div>
 
         <form onSubmit={handleSubmit} className="signup-form">

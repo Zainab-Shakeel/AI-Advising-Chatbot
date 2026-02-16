@@ -59,7 +59,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <h1>Tajweeh Bot</h1>
+          <h1>Tawjeeh Bot</h1>
           <p className="login-subtitle">AI Advisory Chatbot</p>
         </div>
 
