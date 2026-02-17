@@ -54,13 +54,6 @@ export default function Landing() {
                 </div>
               </div>
             </div>
-            <div className="hero-visual" aria-hidden>
-              <div className="visual-card">
-                <div className="visual-content">
-                  <div className="chat-bubble">Academic Planning Assistant</div>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
