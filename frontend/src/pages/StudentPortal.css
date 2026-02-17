@@ -81,7 +81,7 @@
 }
 
 .tawjeeh-nav-item.active {
-  background: #1a2744;
+  background: #1e293b;
   color: #fff;
 }
 
@@ -99,7 +99,7 @@
 }
 
 .chat-header {
-  background: #1a2744;
+  background: #1e293b;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #ffffff;
   display: flex;
@@ -140,7 +140,7 @@
 
 .user-message {
   align-self: flex-end;
-  background: #1a2744;
+  background: #1e293b;
   color: #fff;
   margin-left: auto;
 }
@@ -210,8 +210,8 @@
 
 .chat-input:focus {
   outline: none;
-  border-color: #1a2744;
-  box-shadow: 0 0 0 2px rgba(26, 39, 68, 0.1);
+  border-color: #1e293b;
+  box-shadow: 0 0 0 2px rgba(30, 41, 59, 0.08);
 }
 
 .chat-input::placeholder {
@@ -225,7 +225,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a2744;
+  background: #1e293b;
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -235,7 +235,7 @@
 }
 
 .chat-send-btn:hover {
-  background: #2d3a5c;
+  background: #223049;
   transform: scale(1.02);
 }
 
@@ -248,7 +248,7 @@
 }
 
 .gpa-calculator-header {
-  background: #1a2744;
+  background: #1e293b;
   color: #fff;
   padding: 1rem 1.5rem;
 }
@@ -270,7 +270,7 @@
 .gpa-calculator-title {
   margin: 0;
   padding: 1rem 1.5rem;
-  background: #1a2744;
+  background: #1e293b;
   color: #fff;
   font-size: 1.1rem;
   font-weight: 600;
@@ -312,7 +312,7 @@
 .gpa-table-row input:focus,
 .gpa-table-row select:focus {
   outline: none;
-  border-color: #1a2744;
+  border-color: #1e293b;
 }
 
 .gpa-col-actions {
@@ -344,8 +344,8 @@
 .gpa-add-btn {
   padding: 0.75rem 1.25rem;
   background: #fff;
-  color: #1a2744;
-  border: 1px solid #1a2744;
+  color: #1e293b;
+  border: 1px solid #1e293b;
   border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -354,12 +354,12 @@
 }
 
 .gpa-add-btn:hover {
-  background: #f1f5f9;
+  background: #f8fafc;
 }
 
 .gpa-calculate-btn {
   padding: 0.75rem 2rem;
-  background: #1a2744;
+  background: #1e293b;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -370,7 +370,7 @@
 }
 
 .gpa-calculate-btn:hover {
-  background: #2d3a5c;
+  background: #223049;
   transform: scale(1.02);
 }
 
