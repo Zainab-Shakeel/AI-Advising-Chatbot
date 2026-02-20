@@ -9,7 +9,7 @@ import CourseEligibility from './CourseEligibility';
 const SIDEBAR_ITEMS = [
   { id: 'course_eligibility', label: 'Course Eligibility', icon: '✓' },
   { id: 'graduation_progress', label: 'Graduation Progress', icon: '🎓' },
-  { id: 'academic_policies', label: 'Academic Policies', icon: '📄' },
+  { id: 'tawjeeh_bot', label: 'Tawjeeh Bot', icon: '🤖' },
   { id: 'gpa_calculator', label: 'Cumulative GPA Calculator', icon: 'GPA' },
 ];
 
