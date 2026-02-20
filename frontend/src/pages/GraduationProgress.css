@@ -1,0 +1,166 @@
+.graduation-progress-container {
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: Inter, ui-sans-serif, system-ui, Arial;
+  color: #1e293b;
+}
+
+.gp-header {
+  margin-bottom: 1.5rem;
+}
+
+.gp-header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #1e293b;
+}
+
+.gp-degree-info {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.gp-card {
+  background: #fff;
+  border: 1px solid rgba(30, 41, 59, 0.06);
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.04);
+}
+
+.gp-card-header {
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gp-card-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.gp-card-body {
+  padding: 1.25rem;
+}
+
+.gp-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.gp-stat-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.gp-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.gp-progress-bar {
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.gp-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1e293b, #334155);
+  transition: width 0.3s ease;
+}
+
+.gp-eligibility {
+  border: 1.5px solid rgba(30, 41, 59, 0.06);
+}
+
+.gp-eligibility.eligible .gp-card-header {
+  background: #ecfdf5;
+  border-bottom-color: #d1fae5;
+}
+
+.gp-eligibility.not-eligible .gp-card-header {
+  background: #fef2f2;
+  border-bottom-color: #fee2e2;
+}
+
+.gp-eligibility-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gp-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.gp-check.pass {
+  color: #166534;
+  background: #ecfdf5;
+}
+
+.gp-check.pass span:first-child {
+  color: #166534;
+  font-weight: 700;
+}
+
+.gp-check.fail {
+  color: #7c2d12;
+  background: #fef2f2;
+}
+
+.gp-check.fail span:first-child {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.gp-course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gp-course-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid rgba(30, 41, 59, 0.04);
+}
+
+@media (max-width: 640px) {
+  .graduation-progress-container {
+    padding: 1rem;
+  }
+
+  .gp-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gp-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

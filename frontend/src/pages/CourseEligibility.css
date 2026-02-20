@@ -1,0 +1,411 @@
+.ce-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: Inter, ui-sans-serif, system-ui, Arial;
+  color: #1e293b;
+}
+
+.ce-header {
+  margin-bottom: 1.5rem;
+}
+
+.ce-header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+  color: #1e293b;
+}
+
+.ce-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* Overview Card */
+.ce-overview-card {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(30, 41, 59, 0.1);
+}
+
+.ce-overview-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.15rem;
+}
+
+.ce-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.ce-overview-item {
+  background: rgb(255, 255, 255);
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ce-overview-label {
+  font-size: 0.85rem;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.ce-overview-value {
+color: #1e293b;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+/* Semester Selector */
+.ce-semester-section {
+  margin-bottom: 1.5rem;
+}
+
+.ce-semester-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.ce-semester-select {
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(30, 41, 59, 0.06);
+  border-radius: 8px;
+  background: #fff;
+  color: #1e293b;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.ce-semester-select:focus {
+  outline: none;
+  border-color: #1e293b;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.08);
+}
+
+/* Grid Layout */
+.ce-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+}
+
+/* Section */
+.ce-section {
+  background: #fff;
+  border: 1px solid rgba(30, 41, 59, 0.06);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ce-section-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.15rem;
+  color: #1e293b;
+}
+
+.ce-course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ce-course-card {
+  border: 1px solid rgba(30, 41, 59, 0.06);
+  border-radius: 10px;
+  padding: 1rem;
+  background: #f8fafc;
+}
+
+.ce-course-card.ce-eligible {
+  border-left: 4px solid #166534;
+}
+
+.ce-course-card.ce-not-eligible {
+  border-left: 4px solid #dc2626;
+  background: #fef2f2;
+}
+
+.ce-course-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.ce-course-code {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.ce-course-name {
+  color: #374151;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+
+.ce-course-credits {
+  background: #e2e8f0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.ce-course-info {
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.ce-course-schedule {
+  margin-bottom: 0.25rem;
+}
+
+.ce-course-prereqs {
+  font-size: 0.85rem;
+}
+
+.ce-course-description {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.ce-course-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ce-reason {
+  font-size: 0.9rem;
+  color: #9b1c1c;
+}
+
+.ce-course-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.ce-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ce-btn-select {
+  background: #1e293b;
+  color: #fff;
+  flex: 1;
+}
+
+.ce-btn-select:hover {
+  background: #334155;
+}
+
+.ce-btn-select.selected {
+  background: #166534;
+}
+
+.ce-btn-details {
+  background: #e2e8f0;
+  color: #1e293b;
+  flex: 1;
+}
+
+.ce-btn-details:hover {
+  background: #cbd5e1;
+}
+
+.ce-empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #6b7280;
+}
+
+/* Sidebar */
+.ce-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ce-card {
+  background: #fff;
+  border: 1px solid rgba(30, 41, 59, 0.06);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.ce-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.05rem;
+  color: #1e293b;
+}
+
+.ce-selected-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ce-selected-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid rgba(30, 41, 59, 0.04);
+}
+
+.ce-selected-code {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.ce-selected-name {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.ce-btn-remove {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+.ce-btn-remove:hover {
+  color: #991b1b;
+}
+
+/* Credit Card */
+.ce-credit-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.ce-credit-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.ce-credit-value {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #1e293b;
+}
+
+.ce-progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.ce-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1e293b, #334155);
+  transition: width 0.3s ease;
+}
+
+.ce-warning {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  border-left: 3px solid #dc2626;
+}
+
+.ce-btn-smart {
+  width: 100%;
+  padding: 0.75rem;
+  background: #1e293b;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.ce-btn-smart:hover {
+  background: #334155;
+}
+
+.ce-btn-clear {
+  width: 100%;
+  padding: 0.75rem;
+  background: #e2e8f0;
+  color: #1e293b;
+  border: 1px solid rgba(30, 41, 59, 0.06);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ce-btn-clear:hover {
+  background: #cbd5e1;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .ce-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ce-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .ce-container {
+    padding: 1rem;
+  }
+
+  .ce-overview-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ce-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .ce-course-actions {
+    flex-direction: column;
+  }
+}

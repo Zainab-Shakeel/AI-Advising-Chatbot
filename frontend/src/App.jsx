@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { seedStaffAccounts } from './services/userService';
 import { useEffect } from 'react';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Landing from './pages/Landing';
-import { seedStaffAccounts } from './services/userService';
 import StudentPortal from './pages/StudentPortal';
 import SystemAdminPortal from './pages/SystemAdminPortal';
 

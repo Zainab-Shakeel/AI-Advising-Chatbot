@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './Portal.css';
 import './StudentPortal.css';
+import GraduationProgress from './GraduationProgress';
+import CourseEligibility from './CourseEligibility';
 
 const SIDEBAR_ITEMS = [
   { id: 'course_eligibility', label: 'Course Eligibility', icon: '✓' },
@@ -129,10 +131,14 @@ export default function StudentPortal() {
         </aside>
 
         <div className="tawjeeh-bot-card">
-          {activeSection === 'gpa_calculator' ? (
+          {activeSection === 'course_eligibility' ? (
+            <CourseEligibility />
+          ) : activeSection === 'graduation_progress' ? (
+            <GraduationProgress />
+          ) : activeSection === 'gpa_calculator' ? (
             <div className="gpa-calculator-section">
               <div className="gpa-calculator-header">
-                <h2>Cumulative GPA Calculation</h2>
+                <h2>Tawjeeh GPA Calculator</h2>
               </div>
               <div className="gpa-calculator-card">
                 <h3 className="gpa-calculator-title">Cumulative GPA Calculation</h3>
