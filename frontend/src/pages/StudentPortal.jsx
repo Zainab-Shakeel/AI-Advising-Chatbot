@@ -5,6 +5,7 @@ import './Portal.css';
 import './StudentPortal.css';
 import GraduationProgress from './GraduationProgress';
 import CourseEligibility from './CourseEligibility';
+import { supabase } from "../config/supabaseClient";
 
 const SIDEBAR_ITEMS = [
   { id: 'course_eligibility', label: 'Course Eligibility', icon: '✓' },
@@ -12,6 +13,8 @@ const SIDEBAR_ITEMS = [
   { id: 'tawjeeh_bot', label: 'Tawjeeh Bot', icon: '🤖' },
   { id: 'gpa_calculator', label: 'Cumulative GPA Calculator', icon: 'GPA' },
 ];
+
+const [messages, setMessages] = useState([]);
 
 const SUGGESTED_ACTIONS = [
   'View my graduation status',
@@ -35,6 +38,24 @@ const GRADE_OPTIONS = [
 ];
 
 const initialCourse = { course: '', creditHours: '', grade: '' };
+
+useEffect(() => {
+  const fetchMessages = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+
+    if (!error && data) {
+      setMessages(data);
+    }
+  };
+
+  fetchMessages();
+}, [user]);
 
 function calculateGPAFromCourses(courseList) {
   const valid = courseList.filter((c) => c.course.trim() && c.creditHours && c.grade !== '');
@@ -63,11 +84,38 @@ export default function StudentPortal() {
     navigate('/login', { replace: true });
   };
 
-  const handleSendMessage = (e) => {
-    e?.preventDefault();
-    if (message.trim()) {
-      setMessage('');
-    }
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+
+    if (!message.trim()) return;
+
+    const userMessage = {
+      user_id: user.id,
+      role: "user",
+      message: message,
+    };
+
+    // Save user message
+    await supabase.from("chat_messages").insert([userMessage]);
+
+    // Fake bot reply for now
+    const botReply = {
+      user_id: user.id,
+      role: "bot",
+      message: "This is a demo AI response.",
+    };
+
+    await supabase.from("chat_messages").insert([botReply]);
+
+    // Refresh messages
+    const { data } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+
+    setMessages(data);
+    setMessage("");
   };
 
   const handleSuggestedAction = (action) => {
@@ -209,53 +257,39 @@ export default function StudentPortal() {
               </div>
             </div>
           ) : (
-          <div className="tawjeeh-bot-chat">
-            <div className="chat-header">
-              <h2 className="chat-title">
-                <span className="chat-title-icon">🤖</span>
-                Tawjeeh Bot
-              </h2>
-            </div>
+            <div className="tawjeeh-bot-chat">
+              <div className="chat-header">
+                <h2 className="chat-title">
+                  <span className="chat-title-icon">🤖</span>
+                  Tawjeeh Bot
+                </h2>
+              </div>
 
-            <div className="chat-messages">
-              <div className="message user-message">
-                What are the courses I can take next semester?
-              </div>
-              <div className="message bot-message">
-                <p>Based on your academic record, these are some of the courses you can take next semester:</p>
-                <ul>
-                  <li>Introduction to Artificial Intelligence</li>
-                  <li>Data Structures</li>
-                  <li>Software Engineering</li>
-                </ul>
-              </div>
-              <div className="suggested-actions">
-                {SUGGESTED_ACTIONS.map((action) => (
-                  <button
-                    key={action}
-                    type="button"
-                    className="suggested-action-btn"
-                    onClick={() => handleSuggestedAction(action)}
+              <div className="chat-messages">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`message ${msg.role === "user" ? "user-message" : "bot-message"
+                      }`}
                   >
-                    {action}
-                  </button>
+                    {msg.message}
+                  </div>
                 ))}
               </div>
-            </div>
 
-            <form className="chat-input-area" onSubmit={handleSendMessage}>
-              <input
-                type="text"
-                className="chat-input"
-                placeholder="Type a message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-              <button type="submit" className="chat-send-btn" aria-label="Send">
-                →
-              </button>
-            </form>
-          </div>
+              <form className="chat-input-area" onSubmit={handleSendMessage}>
+                <input
+                  type="text"
+                  className="chat-input"
+                  placeholder="Type a message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                />
+                <button type="submit" className="chat-send-btn" aria-label="Send">
+                  →
+                </button>
+              </form>
+            </div>
           )}
         </div>
       </main>
