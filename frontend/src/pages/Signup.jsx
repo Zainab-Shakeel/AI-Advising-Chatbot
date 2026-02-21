@@ -30,7 +30,7 @@ export default function Signup() {
 
   const isStudent = role === ROLES.STUDENT;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -79,7 +79,7 @@ export default function Signup() {
       return;
     }
 
-    const result = signUp({
+    const result = await signUp({
       email: emailTrimmed,
       username: usernameTrimmed,
       password,

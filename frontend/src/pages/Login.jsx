@@ -18,11 +18,6 @@ export default function Login() {
   const { user, login, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleClearStorage = () => {
-    localStorage.clear();
-    logout();
-    window.location.reload();
-  };
 
   useEffect(() => {
     if (user) {
@@ -31,7 +26,7 @@ export default function Login() {
     }
   }, [user, navigate]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -45,11 +40,16 @@ export default function Login() {
       return;
     }
 
-    const result = loginByCredentials(usernameOrEmail, password);
+    const result = await loginByCredentials(
+      usernameOrEmail,
+      password
+    );
 
     if (result.success) {
       login(result.user);
-      navigate(PORTAL_ROUTES[result.user.role], { replace: true });
+      navigate(PORTAL_ROUTES[result.user.role], {
+        replace: true,
+      });
     } else {
       setError(result.error);
     }
@@ -65,7 +65,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="username">Username or Email</label>
+            <label htmlFor="username">Enter your university email</label>
             <input
               id="username"
               type="text"
@@ -98,9 +98,7 @@ export default function Login() {
         <p className="login-footer">
           Don&apos;t have an account? <Link to="/signup">Sign up</Link>
         </p>
-        <button type="button" className="clear-storage-btn" onClick={handleClearStorage}>
-          Clear all data
-        </button>
+
       </div>
     </div>
   );

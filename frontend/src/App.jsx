@@ -1,12 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { seedStaffAccounts } from './services/userService';
 import { useEffect } from 'react';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Landing from './pages/Landing';
 import StudentPortal from './pages/StudentPortal';
 import SystemAdminPortal from './pages/SystemAdminPortal';
+import { supabase } from "./config/supabaseClient";
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -18,7 +18,15 @@ function ProtectedRoute({ children }) {
 
 function App() {
   useEffect(() => {
-    seedStaffAccounts();
+    const testConnection = async () => {
+      const { data, error } = await supabase
+        .from('test')
+        .select('*');
+
+      console.log(data, error);
+    };
+
+    testConnection();
   }, []);
 
   return (
