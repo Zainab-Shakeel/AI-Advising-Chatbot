@@ -17,17 +17,6 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
-  useEffect(() => {
-    const testConnection = async () => {
-      const { data, error } = await supabase
-        .from('test')
-        .select('*');
-
-      console.log(data, error);
-    };
-
-    testConnection();
-  }, []);
 
   return (
     <AuthProvider>

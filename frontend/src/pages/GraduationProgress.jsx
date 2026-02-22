@@ -1,41 +1,46 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import './GraduationProgress.css';
+import { supabase } from '../config/supabaseClient';
+import { useEffect } from 'react';
 
 /**
  * GraduationProgress page — displays degree progress, course status, and graduation eligibility.
- * Uses mock data for now; easily replaceable with API calls.
  */
 
-const mockStudentData = {
+const GRADE_OPTIONS = [
+  { value: 5.0, label: 'A+ - Exceptional (95-100)' },
+  { value: 4.75, label: 'A - Excellent (90-94)' },
+  { value: 4.5, label: 'B+ - Superior (85-89)' },
+  { value: 4.0, label: 'B - Very Good (80-84)' },
+  { value: 3.5, label: 'C+ - Above Average (75-79)' },
+  { value: 3.0, label: 'C - Good (70-74)' },
+  { value: 2.5, label: 'D+ - High Pass (65-69)' },
+  { value: 2.0, label: 'D - Pass (60-64)' },
+  { value: 0, label: 'F - Fail (0-59)' },
+  { value: 0, label: 'DN - Denial (0-59)' },
+  { value: 'IC', label: 'IC - Incomplete' },
+];
+
+const INITIAL_STUDENT_DATA = {
   name: 'Alex Johnson',
   degreeType: 'BS Computer Science',
-  gpa: 3.45,
-  totalCreditsRequired: 120,
-  totalCreditsCompleted: 84,
-  coreCoursesRequired: 12,
-  coreCoursesCompleted: 10,
-  electivesRequired: 30,
-  electivesCompleted: 20,
   minGPARequired: 2.0,
 };
 
-const mockCourses = {
-  completed: [
-    { code: 'CS101', name: 'Intro to CS', credits: 3, status: 'completed' },
-    { code: 'CS102', name: 'Programming I', credits: 3, status: 'completed' },
-    { code: 'CS201', name: 'Data Structures', credits: 3, status: 'completed' },
-    { code: 'MATH101', name: 'Calculus I', credits: 4, status: 'completed' },
-  ],
-  inProgress: [
-    { code: 'CS202', name: 'Algorithms', credits: 3, status: 'in-progress' },
-    { code: 'CS301', name: 'Operating Systems', credits: 4, status: 'in-progress' },
-  ],
-  remaining: [
-    { code: 'CS401', name: 'Database Systems', credits: 3, status: 'not-started' },
-    { code: 'CS402', name: 'Software Engineering', credits: 3, status: 'not-started' },
-    { code: 'ELEC101', name: 'Elective - AI Basics', credits: 3, status: 'not-started' },
-  ],
+const DEPARTMENT_CREDITS = {
+  'CS': 115,
+  'IS': 115,
+  'IT': 116,
 };
+
+const DEPARTMENT_LABELS = {
+  'CS': 'BS Computer Science',
+  'IS': 'BS Information System',
+  'IT': 'BS Information Technology',
+};
+
+
 
 function getStatusIndicator(status) {
   const map = {
@@ -47,43 +52,196 @@ function getStatusIndicator(status) {
 }
 
 function GraduationProgress() {
+  const { user } = useAuth();
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [newCourse, setNewCourse] = useState({ code: '', name: '', credits: 3, grade: '' });
+  const [allCourses, setAllCourses] = useState([]);
+  const [completedCourses, setCompletedCourses] = useState([]);
+  const [remainingCourses, setRemainingCourses] = useState([]);
+
+  useEffect(() => {
+    if (!user?.department) return;
+
+    const fetchCourses = async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .ilike('department', `%${user.department}%`);
+
+      if (!error) {
+        setAllCourses(data);
+      }
+    };
+
+    fetchCourses();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchCompletedCourses = async () => {
+      const { data, error } = await supabase
+        .from('student_courses')
+        .select(`
+        id,
+        grade,
+        status,
+        courses (
+          id,
+          course_code,
+          course_title,
+          credit_hours
+        )
+      `)
+        .eq('student_id', user.id);
+
+      if (!error) {
+        const formatted = data.map(item => ({
+          id: item.id,
+          code: item.courses.course_code,
+          name: item.courses.course_title,
+          credits: item.courses.credit_hours,
+          grade: item.grade,
+          status: item.status,
+          course_id: item.courses.id
+        }));
+
+        setCompletedCourses(formatted);
+      }
+    };
+
+    fetchCompletedCourses();
+  }, [user]);
+
+  useEffect(() => {
+    if (!allCourses.length) return;
+
+    const completedIds = completedCourses.map(c => c.course_id);
+
+    const remaining = allCourses
+      .filter(course => !completedIds.includes(course.id))
+      .map(course => ({
+        id: course.id,
+        code: course.course_code,
+        name: course.course_title,
+        credits: course.credit_hours,
+        status: 'not-started'
+      }));
+
+    setRemainingCourses(remaining);
+  }, [allCourses, completedCourses]);
+
+  const totalCreditsRequired = useMemo(() => {
+    return DEPARTMENT_CREDITS[user?.department];
+  }, [user]);
+
+  const totalCreditsCompleted = useMemo(() => {
+    return completedCourses.filter(c => c.grade !== 'IC').reduce((sum, c) => sum + c.credits, 0);
+  }, [completedCourses]);
+
+  const currentGPA = useMemo(() => {
+    const valid = completedCourses.filter(c => c.grade !== 'IC');
+    const totalPoints = valid.reduce((sum, c) => sum + (parseFloat(c.grade) * c.credits), 0);
+    const credits = valid.reduce((sum, c) => sum + c.credits, 0);
+    return credits > 0 ? (totalPoints / credits).toFixed(2) : '0.00';
+  }, [completedCourses]);
+
   const creditPercentage = useMemo(() => {
-    return Math.round((mockStudentData.totalCreditsCompleted / mockStudentData.totalCreditsRequired) * 100);
-  }, []);
-
-  const corePercentage = useMemo(() => {
-    return Math.round((mockStudentData.coreCoursesCompleted / mockStudentData.coreCoursesRequired) * 100);
-  }, []);
-
-  const electivePercentage = useMemo(() => {
-    return Math.round((mockStudentData.electivesCompleted / mockStudentData.electivesRequired) * 100);
-  }, []);
+    return Math.round((totalCreditsCompleted / totalCreditsRequired) * 100);
+  }, [totalCreditsCompleted, totalCreditsRequired]);
 
   const gpaStatus = useMemo(() => {
-    if (mockStudentData.gpa >= 3.5) return { indicator: 'green', label: 'Excellent', color: '#166534' };
-    if (mockStudentData.gpa >= 3.0) return { indicator: 'green', label: 'Good', color: '#166534' };
-    if (mockStudentData.gpa >= 2.5) return { indicator: 'yellow', label: 'Satisfactory', color: '#b45309' };
-    return { indicator: 'red', label: 'Below Target', color: '#dc2626' };
-  }, []);
+    const gpa = parseFloat(currentGPA);
+    if (gpa >= 3.5) return { label: 'Excellent', color: '#166534' };
+    if (gpa >= 3.0) return { label: 'Good', color: '#166534' };
+    if (gpa >= 2.5) return { label: 'Satisfactory', color: '#b45309' };
+    return { label: 'Below Target', color: '#dc2626' };
+  }, [currentGPA]);
 
   const graduationEligible = useMemo(() => {
     return (
-      mockStudentData.totalCreditsCompleted >= mockStudentData.totalCreditsRequired &&
-      mockStudentData.coreCoursesCompleted >= mockStudentData.coreCoursesRequired &&
-      mockStudentData.gpa >= mockStudentData.minGPARequired
+      totalCreditsCompleted >= totalCreditsRequired &&
+      parseFloat(currentGPA) >= INITIAL_STUDENT_DATA.minGPARequired
     );
-  }, []);
+  }, [totalCreditsCompleted, totalCreditsRequired, currentGPA]);
 
-  const remainingCredits = mockStudentData.totalCreditsRequired - mockStudentData.totalCreditsCompleted;
+  const remainingCredits = totalCreditsRequired - totalCreditsCompleted;
+
+  const handleAddOrUpdateCourse = async () => {
+    if (!newCourse.code || !newCourse.grade) return;
+
+    const selectedCourse = allCourses.find(c => c.course_code === newCourse.code);
+    if (!selectedCourse) return;
+
+    const { error } = await supabase
+      .from('student_courses')
+      .insert([
+        {
+          student_id: user.id,
+          course_id: selectedCourse.id,
+          grade: newCourse.grade,
+          status: 'completed'
+        }
+      ]);
+
+    if (!error) {
+      setIsAdding(false);
+      setNewCourse({ code: '', name: '', credits: 3, grade: '' });
+
+      // Refetch completed
+      const { data } = await supabase
+        .from('student_courses')
+        .select(`
+        id,
+        grade,
+        status,
+        courses (
+          id,
+          course_code,
+          course_title,
+          credit_hours
+        )
+      `)
+        .eq('student_id', user.id);
+
+      const formatted = data.map(item => ({
+        id: item.id,
+        code: item.courses.course_code,
+        name: item.courses.course_title,
+        credits: item.courses.credit_hours,
+        grade: item.grade,
+        status: item.status,
+        course_id: item.courses.id
+      }));
+
+      setCompletedCourses(formatted);
+    }
+  };
+
+  const startEdit = (index) => {
+    setNewCourse(completedCourses[index]);
+    setEditingIndex(index);
+    setIsAdding(true);
+  };
+
+  const removeCompleted = (index) => {
+    const removed = completedCourses[index];
+    setCompletedCourses(completedCourses.filter((_, i) => i !== index));
+    // Optionally add back to remaining if it's a known course
+    if (!remainingCourses.find(c => c.code === removed.code)) {
+      setRemainingCourses([...remainingCourses, { ...removed, status: 'not-started', grade: undefined }]);
+    }
+  };
 
   return (
+
     <div className="graduation-progress-container">
       <div className="gp-header">
         <h2>Graduation Progress</h2>
-        <div className="gp-degree-info">{mockStudentData.degreeType}</div>
+        <div className="gp-degree-info">{DEPARTMENT_LABELS[user?.department] || INITIAL_STUDENT_DATA.degreeType}</div>
       </div>
 
-      {/* Degree Progress Overview */}
       <div className="gp-card">
         <div className="gp-card-header">
           <h3>Degree Progress Overview</h3>
@@ -92,21 +250,20 @@ function GraduationProgress() {
           <div className="gp-stat-row">
             <div>
               <div className="gp-stat-label">Credits Completed</div>
-              <div className="gp-stat-value">{mockStudentData.totalCreditsCompleted}</div>
+              <div className="gp-stat-value">{totalCreditsCompleted}</div>
             </div>
             <div>
               <div className="gp-stat-label">Credits Required</div>
-              <div className="gp-stat-value">{mockStudentData.totalCreditsRequired}</div>
+              <div className="ce-overview-value">{totalCreditsRequired} C.H</div>
             </div>
             <div>
               <div className="gp-stat-label">Remaining</div>
-              <div className="gp-stat-value" style={{ color: '#dc2626' }}>{remainingCredits}</div>
+              <div className="gp-stat-value" style={{ color: '#dc2626' }}>{remainingCredits > 0 ? remainingCredits : 0}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Credit Progress Bar */}
       <div className="gp-card">
         <div className="gp-card-header">
           <h3>Credit Progress</h3>
@@ -117,44 +274,11 @@ function GraduationProgress() {
             <div className="gp-progress-fill" style={{ width: `${creditPercentage}%` }} />
           </div>
           <div style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
-            {mockStudentData.totalCreditsCompleted} of {mockStudentData.totalCreditsRequired} credits completed
+            {totalCreditsCompleted} of {INITIAL_STUDENT_DATA.totalCreditsRequired} credits completed
           </div>
         </div>
       </div>
 
-      {/* Core Courses Section */}
-      <div className="gp-card">
-        <div className="gp-card-header">
-          <h3>Core Courses</h3>
-          <div style={{ fontSize: 14, color: '#6b7280' }}>{corePercentage}% Complete</div>
-        </div>
-        <div className="gp-card-body">
-          <div className="gp-progress-bar">
-            <div className="gp-progress-fill" style={{ width: `${corePercentage}%` }} />
-          </div>
-          <div style={{ marginTop: 12, fontSize: 13, color: '#6b7280' }}>
-            {mockStudentData.coreCoursesCompleted} of {mockStudentData.coreCoursesRequired} required
-          </div>
-        </div>
-      </div>
-
-      {/* Electives Section */}
-      <div className="gp-card">
-        <div className="gp-card-header">
-          <h3>Electives</h3>
-          <div style={{ fontSize: 14, color: '#6b7280' }}>{electivePercentage}% Complete</div>
-        </div>
-        <div className="gp-card-body">
-          <div className="gp-progress-bar">
-            <div className="gp-progress-fill" style={{ width: `${electivePercentage}%` }} />
-          </div>
-          <div style={{ marginTop: 12, fontSize: 13, color: '#6b7280' }}>
-            {mockStudentData.electivesCompleted} of {mockStudentData.electivesRequired} required
-          </div>
-        </div>
-      </div>
-
-      {/* GPA Status */}
       <div className="gp-card">
         <div className="gp-card-header">
           <h3>GPA Status</h3>
@@ -166,17 +290,16 @@ function GraduationProgress() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <div className="gp-stat-label">Current GPA</div>
-              <div className="gp-stat-value">{mockStudentData.gpa}</div>
+              <div className="gp-stat-value">{currentGPA}</div>
             </div>
             <div>
               <div className="gp-stat-label">Minimum Required</div>
-              <div className="gp-stat-value">{mockStudentData.minGPARequired}</div>
+              <div className="gp-stat-value">{INITIAL_STUDENT_DATA.minGPARequired}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Graduation Eligibility Status */}
       <div className={`gp-card gp-eligibility ${graduationEligible ? 'eligible' : 'not-eligible'}`}>
         <div className="gp-card-header">
           <h3>Graduation Eligibility</h3>
@@ -186,31 +309,26 @@ function GraduationProgress() {
         </div>
         <div className="gp-card-body">
           <div className="gp-eligibility-checks">
-            <div className={`gp-check ${mockStudentData.totalCreditsCompleted >= mockStudentData.totalCreditsRequired ? 'pass' : 'fail'}`}>
+            <div className={`gp-check ${totalCreditsCompleted >= INITIAL_STUDENT_DATA.totalCreditsRequired ? 'pass' : 'fail'}`}>
               <span>●</span>
-              <span>Total Credits: {mockStudentData.totalCreditsCompleted}/{mockStudentData.totalCreditsRequired}</span>
+              <span>Total Credits: {totalCreditsCompleted}/{totalCreditsRequired}</span>
             </div>
-            <div className={`gp-check ${mockStudentData.coreCoursesCompleted >= mockStudentData.coreCoursesRequired ? 'pass' : 'fail'}`}>
+            <div className={`gp-check ${parseFloat(currentGPA) >= INITIAL_STUDENT_DATA.minGPARequired ? 'pass' : 'fail'}`}>
               <span>●</span>
-              <span>Core Courses: {mockStudentData.coreCoursesCompleted}/{mockStudentData.coreCoursesRequired}</span>
-            </div>
-            <div className={`gp-check ${mockStudentData.gpa >= mockStudentData.minGPARequired ? 'pass' : 'fail'}`}>
-              <span>●</span>
-              <span>GPA Requirement: {mockStudentData.gpa} ≥ {mockStudentData.minGPARequired}</span>
+              <span>GPA Requirement: {currentGPA} ≥ {INITIAL_STUDENT_DATA.minGPARequired}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Remaining Courses */}
       <div className="gp-card">
         <div className="gp-card-header">
           <h3>Remaining Courses</h3>
-          <div style={{ fontSize: 14, color: '#6b7280' }}>{mockCourses.remaining.length} courses</div>
+          <div style={{ fontSize: 14, color: '#6b7280' }}>{remainingCourses.length} courses</div>
         </div>
         <div className="gp-card-body">
           <div className="gp-course-list">
-            {mockCourses.remaining.map((course) => {
+            {remainingCourses.map((course) => {
               const ind = getStatusIndicator(course.status);
               return (
                 <div key={course.code} className="gp-course-item">
@@ -229,26 +347,65 @@ function GraduationProgress() {
         </div>
       </div>
 
-      {/* Completed Courses */}
       <div className="gp-card">
         <div className="gp-card-header">
           <h3>Completed Courses</h3>
-          <div style={{ fontSize: 14, color: '#6b7280' }}>{mockCourses.completed.length} courses</div>
+          <button
+            className="gp-add-btn"
+            onClick={() => { setIsAdding(true); setEditingIndex(null); setNewCourse({ code: '', name: '', credits: 3, grade: '' }); }}
+          >
+            + Add Course
+          </button>
         </div>
         <div className="gp-card-body">
+          {isAdding && (
+            <div className="gp-add-form">
+              <div className="gp-form-row">
+                <select
+                  value={newCourse.code}
+                  onChange={(e) => {
+                    const selected = remainingCourses.find(c => c.code === e.target.value) || { code: '', name: '', credits: 3 };
+                    setNewCourse({ ...newCourse, code: selected.code, name: selected.name, credits: selected.credits });
+                  }}
+                >
+                  <option value="">Select Course</option>
+                  {remainingCourses.map(c => <option key={c.code} value={c.code}>{c.code} - {c.name}</option>)}
+                  <option value="CUSTOM">Other (Manual Entry)</option>
+                </select>
+                {newCourse.code === 'CUSTOM' && (
+                  <>
+                    <input type="text" placeholder="Code" onChange={(e) => setNewCourse({ ...newCourse, code: e.target.value })} />
+                    <input type="text" placeholder="Name" onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })} />
+                    <input type="number" placeholder="Credits" onChange={(e) => setNewCourse({ ...newCourse, credits: parseInt(e.target.value) })} />
+                  </>
+                )}
+                <select value={newCourse.grade} onChange={(e) => setNewCourse({ ...newCourse, grade: parseFloat(e.target.value) })}>
+                  <option value="">Grade</option>
+                  {GRADE_OPTIONS.map(opt => <option key={opt.label} value={opt.value}>{opt.label}</option>)}
+                </select>
+                <button onClick={handleAddOrUpdateCourse}>{editingIndex !== null ? 'Update' : 'Add'}</button>
+                <button className="gp-cancel-btn" onClick={() => { setIsAdding(false); setEditingIndex(null); }}>Cancel</button>
+              </div>
+            </div>
+          )}
           <div className="gp-course-list">
-            {mockCourses.completed.map((course) => {
+            {completedCourses.map((course, index) => {
               const ind = getStatusIndicator(course.status);
+              const gradeLabel = GRADE_OPTIONS.find(o => o.value === course.grade)?.label || 'N/A';
               return (
                 <div key={course.code} className="gp-course-item">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ color: ind.color, fontWeight: 700 }}>{ind.label}</span>
                     <div>
-                      <div style={{ fontWeight: 600 }}>{course.code}</div>
+                      <div style={{ fontWeight: 600 }}>{course.code} ({gradeLabel})</div>
                       <div style={{ fontSize: 13, color: '#6b7280' }}>{course.name}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 13, color: '#6b7280' }}>{course.credits} credits</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>{course.credits} credits</div>
+                    <button className="gp-icon-btn" onClick={() => startEdit(index)}>✎</button>
+                    <button className="gp-icon-btn" onClick={() => removeCompleted(index)}>🗑</button>
+                  </div>
                 </div>
               );
             })}
@@ -260,3 +417,4 @@ function GraduationProgress() {
 }
 
 export default GraduationProgress;
+

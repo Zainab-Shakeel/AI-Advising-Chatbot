@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './Portal.css';
@@ -14,7 +14,6 @@ const SIDEBAR_ITEMS = [
   { id: 'gpa_calculator', label: 'Cumulative GPA Calculator', icon: 'GPA' },
 ];
 
-const [messages, setMessages] = useState([]);
 
 const SUGGESTED_ACTIONS = [
   'View my graduation status',
@@ -24,41 +23,25 @@ const SUGGESTED_ACTIONS = [
 ];
 
 const GRADE_OPTIONS = [
-  { value: 4.0, label: 'A' },
-  { value: 3.7, label: 'A-' },
-  { value: 3.3, label: 'B+' },
-  { value: 3.0, label: 'B' },
-  { value: 2.7, label: 'B-' },
-  { value: 2.3, label: 'C+' },
-  { value: 2.0, label: 'C' },
-  { value: 1.7, label: 'C-' },
-  { value: 1.3, label: 'D+' },
-  { value: 1.0, label: 'D' },
-  { value: 0, label: 'F' },
+  { value: 5.0, label: 'A+ - Exceptional ' },
+  { value: 4.75, label: 'A - Excellent' },
+  { value: 4.5, label: 'B+ - Superior' },
+  { value: 4.0, label: 'B - Very Good ' },
+  { value: 3.5, label: 'C+ - Above Average ' },
+  { value: 3.0, label: 'C - Good' },
+  { value: 2.5, label: 'D+ - High Pass ' },
+  { value: 2.0, label: 'D - Pass ' },
+  { value: 0, label: 'F - Fail ' },
+  { value: 0, label: 'DN - Denial ' },
+  { value: 'IC', label: 'IC - Incomplete' },
 ];
 
 const initialCourse = { course: '', creditHours: '', grade: '' };
 
-useEffect(() => {
-  const fetchMessages = async () => {
-    if (!user) return;
 
-    const { data, error } = await supabase
-      .from("chat_messages")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
-
-    if (!error && data) {
-      setMessages(data);
-    }
-  };
-
-  fetchMessages();
-}, [user]);
 
 function calculateGPAFromCourses(courseList) {
-  const valid = courseList.filter((c) => c.course.trim() && c.creditHours && c.grade !== '');
+  const valid = courseList.filter((c) => c.course.trim() && c.creditHours && c.grade !== '' && c.grade !== 'IC');
   if (valid.length === 0) return null;
   let totalPoints = 0;
   let totalHours = 0;
@@ -77,6 +60,26 @@ export default function StudentPortal() {
   const [courses, setCourses] = useState([{ ...initialCourse }]);
   const [gpaResult, setGpaResult] = useState(null);
   const { user, logout } = useAuth();
+
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("profile_id", user.id)
+        .order("created_at", { ascending: true });
+
+      if (!error && data) {
+        setMessages(data);
+      }
+    };
+
+    fetchMessages();
+  }, [user]);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -90,7 +93,7 @@ export default function StudentPortal() {
     if (!message.trim()) return;
 
     const userMessage = {
-      user_id: user.id,
+      profile_id: user.id,
       role: "user",
       message: message,
     };
@@ -100,7 +103,7 @@ export default function StudentPortal() {
 
     // Fake bot reply for now
     const botReply = {
-      user_id: user.id,
+      profile_id: user.id,
       role: "bot",
       message: "This is a demo AI response.",
     };
@@ -111,7 +114,7 @@ export default function StudentPortal() {
     const { data } = await supabase
       .from("chat_messages")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("profile_id", user.id)
       .order("created_at", { ascending: true });
 
     setMessages(data);
@@ -186,10 +189,10 @@ export default function StudentPortal() {
           ) : activeSection === 'gpa_calculator' ? (
             <div className="gpa-calculator-section">
               <div className="gpa-calculator-header">
-                <h2>Tawjeeh GPA Calculator</h2>
+                <h2>KAU GPA Calculator</h2>
               </div>
               <div className="gpa-calculator-card">
-                <h3 className="gpa-calculator-title">Cumulative GPA Calculation</h3>
+                <h3 className="gpa-calculator-title">Cumulative GPA Calculation (5-point scale)</h3>
                 <div className="gpa-courses-table">
                   <div className="gpa-table-header">
                     <span>Course</span>

@@ -164,3 +164,73 @@
     gap: 0.5rem;
   }
 }
+
+.gp-add-btn {
+  background: #1e293b;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.gp-add-btn:hover {
+  background: #334155;
+}
+
+.gp-add-form {
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid rgba(30, 41, 59, 0.06);
+  margin-bottom: 1rem;
+}
+
+.gp-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.gp-form-row select,
+.gp-form-row input {
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.gp-form-row button {
+  padding: 0.5rem 1rem;
+  background: #1e293b;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.gp-cancel-btn {
+  background: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+.gp-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0.25rem;
+  font-size: 1.1rem;
+  transition: color 0.1s;
+}
+
+.gp-icon-btn:hover {
+  color: #1e293b;
+}
+

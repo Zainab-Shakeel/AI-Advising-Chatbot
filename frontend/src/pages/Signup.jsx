@@ -9,9 +9,9 @@ const ROLE_OPTIONS = [
 ];
 
 const DEPARTMENT_OPTIONS = [
-  { value: 'computer_science', label: 'Computer Science' },
-  { value: 'information_system', label: 'Information System' },
-  { value: 'information_technology', label: 'Information Technology' },
+  { value: 'CS', label: 'Computer Science' },
+  { value: 'IS', label: 'Information System' },
+  { value: 'IT', label: 'Information Technology' },
 ];
 
 

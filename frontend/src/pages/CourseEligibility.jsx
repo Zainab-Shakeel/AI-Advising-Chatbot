@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import './CourseEligibility.css';
 
 /**
@@ -12,6 +13,12 @@ const studentMockData = {
   maxAllowedCredits: 18,
   currentlyRegisteredCredits: 6,
   minGPARequired: 2.0,
+};
+
+const DEPARTMENT_CREDITS = {
+  'computer_science': 115,
+  'information_system': 115,
+  'information_technology': 116,
 };
 
 const coursesMockData = [
@@ -74,8 +81,13 @@ const coursesMockData = [
 const completedCoursesData = ['CS101', 'CS102'];
 
 function CourseEligibility() {
+  const { user } = useAuth();
   const [selectedSemester, setSelectedSemester] = useState('Fall 2026');
   const [selectedCourses, setSelectedCourses] = useState([]);
+
+  const totalCreditsRequired = useMemo(() => {
+    return DEPARTMENT_CREDITS[user?.department];
+  }, [user]);
 
   // Compute standing
   const academicStanding = useMemo(() => {
@@ -194,6 +206,10 @@ function CourseEligibility() {
           <div className="ce-overview-item">
             <div className="ce-overview-label">Current GPA</div>
             <div className="ce-overview-value">{studentMockData.gpa}</div>
+          </div>
+          <div className="ce-overview-item">
+            <div className="ce-overview-label">Graduation Requirement</div>
+            <div className="ce-overview-value">{totalCreditsRequired} C.H</div>
           </div>
           <div className="ce-overview-item">
             <div className="ce-overview-label">Max Allowed Credits</div>
