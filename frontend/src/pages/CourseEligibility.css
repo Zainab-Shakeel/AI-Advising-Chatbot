@@ -57,7 +57,7 @@
 }
 
 .ce-overview-value {
-color: #1e293b;
+  color: #1e293b;
   font-size: 1.75rem;
   font-weight: 700;
 }
@@ -407,5 +407,23 @@ color: #1e293b;
 
   .ce-course-actions {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .ce-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ce-overview-item {
+    padding: 0.75rem;
+  }
+
+  .ce-overview-value {
+    font-size: 1.5rem;
+  }
+
+  .ce-header h2 {
+    font-size: 1.5rem;
   }
 }

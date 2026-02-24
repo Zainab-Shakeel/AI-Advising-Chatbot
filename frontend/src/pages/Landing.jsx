@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Landing.css';
 
 export default function Landing() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
-    <div className="landing-root">
+    <div className={`landing-root ${isMenuOpen ? 'menu-open' : ''}`}>
       <header className="landing-header">
         <div className="header-container">
           <div className="header-left">
@@ -12,12 +14,22 @@ export default function Landing() {
             <span className="tagline">Intelligent Academic Planning Solutions</span>
           </div>
 
-          <nav className="nav">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#how-it-works" className="nav-link">How It Works</a>
-            <a href="#about" className="nav-link">About</a>
-            <Link to="/login" className="btn btn-secondary">Login</Link>
-            <Link to="/signup" className="btn btn-primary">Get Started</Link>
+          <button
+            className="mobile-menu-toggle"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle Navigation"
+          >
+            <span className="hamburger"></span>
+          </button>
+
+          <nav className={`nav ${isMenuOpen ? 'active' : ''}`}>
+            <a href="#features" className="nav-link" onClick={() => setIsMenuOpen(false)}>Features</a>
+            <a href="#how-it-works" className="nav-link" onClick={() => setIsMenuOpen(false)}>How It Works</a>
+            <a href="#about" className="nav-link" onClick={() => setIsMenuOpen(false)}>About</a>
+            <div className="nav-actions">
+              <Link to="/login" className="btn btn-secondary" onClick={() => setIsMenuOpen(false)}>Login</Link>
+              <Link to="/signup" className="btn btn-primary" onClick={() => setIsMenuOpen(false)}>Get Started</Link>
+            </div>
           </nav>
         </div>
       </header>
@@ -31,8 +43,8 @@ export default function Landing() {
                 Transform Your Academic Journey with Intelligent Course Planning
               </h1>
               <p className="hero-description">
-                Leverage cutting-edge artificial intelligence to receive personalized academic guidance, 
-                comprehensive course recommendations, and strategic degree planning tailored to your 
+                Leverage cutting-edge artificial intelligence to receive personalized academic guidance,
+                comprehensive course recommendations, and strategic degree planning tailored to your
                 educational objectives and program requirements.
               </p>
               <div className="hero-ctas">
@@ -129,26 +141,26 @@ export default function Landing() {
           </div>
           <div className="about-content">
             <p className="about-text">
-              The AI Advising Bot represents a sophisticated academic planning solution designed to 
-              enhance the student advising experience through intelligent automation. Our platform 
-              synthesizes complex program regulations, institutional policies, and established 
-              advising methodologies to deliver personalized course recommendations and strategic 
+              The AI Advising Bot represents a sophisticated academic planning solution designed to
+              enhance the student advising experience through intelligent automation. Our platform
+              synthesizes complex program regulations, institutional policies, and established
+              advising methodologies to deliver personalized course recommendations and strategic
               academic guidance.
             </p>
             <p className="about-text">
-              This system serves as a complementary tool to traditional human advising services, 
-              enabling students to arrive at advising appointments better prepared with informed 
-              questions and preliminary planning. It is not intended to replace professional academic 
-              advisors but rather to augment the advising process and provide accessible support 
+              This system serves as a complementary tool to traditional human advising services,
+              enabling students to arrive at advising appointments better prepared with informed
+              questions and preliminary planning. It is not intended to replace professional academic
+              advisors but rather to augment the advising process and provide accessible support
               outside of standard office hours.
             </p>
             <div className="about-subsection">
               <h3>Privacy & Security</h3>
               <p>
-                All student data is processed and stored in accordance with institutional privacy 
-                standards and applicable data protection regulations. The platform employs enterprise-grade 
-                security measures to safeguard sensitive information. The system is designed to avoid 
-                providing medical, legal, or financial advice and will direct users to appropriate 
+                All student data is processed and stored in accordance with institutional privacy
+                standards and applicable data protection regulations. The platform employs enterprise-grade
+                security measures to safeguard sensitive information. The system is designed to avoid
+                providing medical, legal, or financial advice and will direct users to appropriate
                 professional resources for complex matters requiring specialized expertise.
               </p>
             </div>
