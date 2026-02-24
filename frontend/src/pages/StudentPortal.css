@@ -386,3 +386,69 @@
   background: #fee2e2;
   color: #dc2626;
 }
+
+@media (max-width: 768px) {
+  .portal-main.student-portal-main {
+    flex-direction: column;
+    padding: 1rem;
+    align-items: center;
+  }
+
+  .tawjeeh-bot-sidebar {
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    margin-bottom: 0;
+  }
+
+  .tawjeeh-bot-card {
+    border-left: 1px solid #e2e8f0;
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    width: 100%;
+    min-height: auto;
+  }
+
+  .tawjeeh-bot-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0 1rem;
+    scrollbar-width: none;
+  }
+
+  .tawjeeh-bot-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tawjeeh-nav-item {
+    white-space: nowrap;
+    width: auto;
+    padding: 0.75rem 1rem;
+  }
+
+  .gpa-table-header {
+    display: none;
+  }
+
+  .gpa-table-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+    background: #f8fafc;
+  }
+
+  .gpa-table-row::before {
+    content: "Course Entry";
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+  }
+
+  .gpa-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
