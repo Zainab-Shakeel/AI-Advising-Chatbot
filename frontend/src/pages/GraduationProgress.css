@@ -149,6 +149,13 @@
   border: 1px solid rgba(30, 41, 59, 0.04);
 }
 
+@media (max-width: 768px) {
+  .gp-stat-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+}
+
 @media (max-width: 640px) {
   .graduation-progress-container {
     padding: 1rem;
@@ -160,14 +167,24 @@
 
   .gp-stat-row {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
     text-align: center;
+  }
+
+  .gp-stat-value {
+    font-size: 1.5rem;
   }
 
   .gp-card-header {
     flex-direction: column;
     align-items: stretch;
     gap: 0.75rem;
+  }
+
+  .gp-course-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .gp-form-row {

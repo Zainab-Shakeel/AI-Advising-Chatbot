@@ -392,6 +392,27 @@
   }
 }
 
+@media (max-width: 768px) {
+  .ce-course-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ce-course-credits {
+    align-self: flex-start;
+  }
+
+  .ce-semester-label {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ce-semester-select {
+    width: 100%;
+  }
+}
+
 @media (max-width: 640px) {
   .ce-container {
     padding: 1rem;
@@ -399,6 +420,15 @@
 
   .ce-overview-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .ce-overview-item {
+    padding: 0.75rem;
+  }
+
+  .ce-overview-value {
+    font-size: 1.25rem;
   }
 
   .ce-sidebar {
@@ -415,15 +445,11 @@
     grid-template-columns: 1fr;
   }
 
-  .ce-overview-item {
-    padding: 0.75rem;
-  }
-
-  .ce-overview-value {
-    font-size: 1.5rem;
-  }
-
   .ce-header h2 {
     font-size: 1.5rem;
+  }
+
+  .ce-section {
+    padding: 1rem;
   }
 }
