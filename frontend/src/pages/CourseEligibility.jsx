@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../config/supabaseClient';
 import './CourseEligibility.css';
 
 /**
@@ -8,117 +9,245 @@ import './CourseEligibility.css';
  * selected courses, credit tracking, and smart study plan
  */
 
-const studentMockData = {
-  gpa: 2.8,
-  maxAllowedCredits: 18,
-  currentlyRegisteredCredits: 6,
-  minGPARequired: 2.0,
-};
-
 const DEPARTMENT_CREDITS = {
-  'computer_science': 115,
-  'information_system': 115,
-  'information_technology': 116,
+  CS: 115,
+  IS: 115,
+  IT: 116,
 };
 
-const coursesMockData = [
-  {
-    code: 'CS201',
-    name: 'Data Structures',
-    credits: 3,
-    prerequisites: ['CS101'],
-    offeredSemesters: ['Fall 2026', 'Spring 2027'],
-    schedule: 'Mon 10:00-12:00',
-    description: 'Fundamental data structures including arrays, linked lists, trees, and graphs.',
-  },
-  {
-    code: 'CS202',
-    name: 'Algorithms',
-    credits: 3,
-    prerequisites: ['CS201'],
-    offeredSemesters: ['Spring 2027'],
-    schedule: 'Tue 14:00-16:00',
-    description: 'Analysis and design of algorithms, sorting, searching, and optimization.',
-  },
-  {
-    code: 'CS301',
-    name: 'Operating Systems',
-    credits: 4,
-    prerequisites: ['CS201', 'CS202'],
-    offeredSemesters: ['Fall 2026'],
-    schedule: 'Wed 10:00-12:00',
-    description: 'Process management, memory management, file systems, and concurrency.',
-  },
-  {
-    code: 'CS105',
-    name: 'Intro to Programming',
-    credits: 3,
-    prerequisites: [],
-    offeredSemesters: ['Fall 2026', 'Spring 2027'],
-    schedule: 'Mon 14:00-16:00',
-    description: 'Python programming basics for beginners.',
-  },
-  {
-    code: 'MATH201',
-    name: 'Discrete Mathematics',
-    credits: 3,
-    prerequisites: [],
-    offeredSemesters: ['Fall 2026'],
-    schedule: 'Thu 09:00-11:00',
-    description: 'Logic, sets, combinatorics, graph theory, and proof techniques.',
-  },
-  {
-    code: 'CS999',
-    name: 'Special Topics in CS',
-    credits: 2,
-    prerequisites: ['CS101'],
-    offeredSemesters: ['Fall 2026'],
-    schedule: 'Fri 09:00-11:00',
-    description: 'Advanced and emerging topics in computer science.',
-  },
-];
+function normalizeDepartmentCode(value) {
+  if (!value) return null;
+  const raw = String(value).toUpperCase();
+  if (raw === 'COMPUTER_SCIENCE' || raw === 'COMPUTER SCIENCE') return 'CS';
+  if (raw === 'INFORMATION_SYSTEM' || raw === 'INFORMATION SYSTEM') return 'IS';
+  if (raw === 'INFORMATION_TECHNOLOGY' || raw === 'INFORMATION TECHNOLOGY') return 'IT';
+  if (['CS', 'IS', 'IT'].includes(raw)) return raw;
+  return null;
+}
 
-const completedCoursesData = ['CS101', 'CS102'];
+function normalizePrerequisites(raw) {
+  if (!raw) return [];
+
+  // If already an array (e.g. Postgres text[] or JSON[] mapped by Supabase)
+  if (Array.isArray(raw)) {
+    return raw
+      .map((p) => (typeof p === 'string' ? p.trim() : ''))
+      .filter(Boolean);
+  }
+
+  // If stored as JSON string, try to parse
+  if (typeof raw === 'string' && raw.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((p) => (typeof p === 'string' ? p.trim() : ''))
+          .filter(Boolean);
+      }
+    } catch {
+      // fall through to comma-splitting
+    }
+  }
+
+  // Fallback: comma-separated string like "CS101, CS102"
+  if (typeof raw === 'string') {
+    return raw
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
 
 function CourseEligibility() {
   const { user } = useAuth();
   const [selectedSemester, setSelectedSemester] = useState('Fall 2026');
   const [selectedCourses, setSelectedCourses] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [studentCourses, setStudentCourses] = useState([]);
+  const [showAllEligible, setShowAllEligible] = useState(false);
+  const [showAllNotEligible, setShowAllNotEligible] = useState(false);
+  const [expandedCourseCode, setExpandedCourseCode] = useState(null);
 
-  const totalCreditsRequired = useMemo(() => {
-    return DEPARTMENT_CREDITS[user?.department];
+  // Load courses for the student's department
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const deptCode = normalizeDepartmentCode(user?.department);
+
+      let data = null;
+      let error = null;
+
+      if (deptCode) {
+        const res = await supabase.from('courses').select('*').eq('department', deptCode);
+        data = res.data;
+        error = res.error;
+      } else if (user?.department) {
+        const res = await supabase
+          .from('courses')
+          .select('*')
+          .ilike('department', `%${user.department}%`);
+        data = res.data;
+        error = res.error;
+      }
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        setCourses(
+          data.map((row) => ({
+            code: row.course_code,
+            name: row.course_title,
+            credits: row.credit_hours,
+            prerequisites: normalizePrerequisites(row.prerequisites),
+            offeredSemesters: row.offered_semesters || [],
+            schedule: row.schedule || '',
+            description: row.description || '',
+          })),
+        );
+        return;
+      }
+
+      const fallback = await supabase.from('courses').select('*');
+      if (!fallback.error && Array.isArray(fallback.data)) {
+        setCourses(
+          fallback.data.map((row) => ({
+            code: row.course_code,
+            name: row.course_title,
+            credits: row.credit_hours,
+            prerequisites: normalizePrerequisites(row.prerequisites),
+            offeredSemesters: row.offered_semesters || [],
+            schedule: row.schedule || '',
+            description: row.description || '',
+          })),
+        );
+      }
+    };
+
+    fetchCourses();
   }, [user]);
 
-  // Compute standing
-  const academicStanding = useMemo(() => {
-    return studentMockData.gpa >= studentMockData.minGPARequired ? 'Good Standing' : 'Probation';
+  // Load student's courses and keep them in sync in real time
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchStudentCourses = async () => {
+      const { data, error } = await supabase
+        .from('student_courses')
+        .select(
+          `
+          id,
+          grade,
+          status,
+          courses (
+            id,
+            course_code,
+            credit_hours
+          )
+        `,
+        )
+        .eq('student_id', user.id);
+
+      if (!error && Array.isArray(data)) {
+        const formatted = data.map((item) => ({
+          id: item.id,
+          code: item.courses.course_code,
+          credits: item.courses.credit_hours,
+          grade: item.grade,
+          status: item.status,
+        }));
+        setStudentCourses(formatted);
+      }
+    };
+
+    fetchStudentCourses();
+
+    const channel = supabase
+      .channel(`student_courses_eligibility_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'student_courses', filter: `student_id=eq.${user.id}` },
+        () => {
+          fetchStudentCourses();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const totalCreditsRequired = useMemo(() => {
+    const code = normalizeDepartmentCode(user?.department);
+    if (!code) return 0;
+    return DEPARTMENT_CREDITS[code] ?? 0;
+  }, [user]);
+
+  const completedForGpa = useMemo(
+    () => studentCourses.filter((c) => c.status === 'completed' && c.grade !== 'IC'),
+    [studentCourses],
+  );
+
+  const currentGpa = useMemo(() => {
+    const totalPoints = completedForGpa.reduce(
+      (sum, c) => sum + (parseFloat(c.grade) * c.credits || 0),
+      0,
+    );
+    const credits = completedForGpa.reduce((sum, c) => sum + (c.credits || 0), 0);
+    return credits > 0 ? (totalPoints / credits).toFixed(2) : '0.00';
+  }, [completedForGpa]);
+
+  const MIN_GPA_REQUIRED = 2.0;
+  const MAX_ALLOWED_CREDITS = 18;
+
+  const maxAllowedCredits = useMemo(() => {
+    // Business rule: fixed cap of 18 credit hours per term.
+    return MAX_ALLOWED_CREDITS;
   }, []);
 
+  const currentlyRegisteredCredits = useMemo(
+    () =>
+      studentCourses
+        .filter((c) => c.status && c.status !== 'completed')
+        .reduce((sum, c) => sum + (c.credits || 0), 0),
+    [studentCourses],
+  );
+
+  const academicStanding = useMemo(() => {
+    return parseFloat(currentGpa) >= MIN_GPA_REQUIRED ? 'Good Standing' : 'Probation';
+  }, [currentGpa]);
+
   const remainingCredits = useMemo(() => {
-    return studentMockData.maxAllowedCredits - studentMockData.currentlyRegisteredCredits;
-  }, []);
+    return maxAllowedCredits - currentlyRegisteredCredits;
+  }, [maxAllowedCredits, currentlyRegisteredCredits]);
 
   const selectedCredits = useMemo(() => {
     return selectedCourses.reduce((sum, code) => {
-      const course = coursesMockData.find((c) => c.code === code);
+      const course = courses.find((c) => c.code === code);
       return sum + (course ? course.credits : 0);
     }, 0);
-  }, [selectedCourses]);
+  }, [selectedCourses, courses]);
 
   const remainingAfterSelection = useMemo(() => {
     return remainingCredits - selectedCredits;
   }, [selectedCredits, remainingCredits]);
 
+  const completedCourseCodes = useMemo(
+    () => studentCourses.filter((c) => c.status === 'completed').map((c) => c.code),
+    [studentCourses],
+  );
+
   // Check if course is eligible
   function isCourseEligible(course) {
     // Already completed
-    if (completedCoursesData.includes(course.code)) return false;
+    if (completedCourseCodes.includes(course.code)) return false;
 
-    // Not offered in selected semester
-    if (!course.offeredSemesters.includes(selectedSemester)) return false;
+    // Not offered in selected semester (if we have offering data)
+    if (course.offeredSemesters.length > 0 && !course.offeredSemesters.includes(selectedSemester)) {
+      return false;
+    }
 
     // Missing prerequisites
-    const hasMissingPrereqs = course.prerequisites.some((p) => !completedCoursesData.includes(p));
+    const hasMissingPrereqs = course.prerequisites.some((p) => !completedCourseCodes.includes(p));
     if (hasMissingPrereqs) return false;
 
     // Would exceed credit limit
@@ -131,15 +260,15 @@ function CourseEligibility() {
   function getNotEligibleReasons(course) {
     const reasons = [];
 
-    if (completedCoursesData.includes(course.code)) {
+    if (completedCourseCodes.includes(course.code)) {
       reasons.push('Already completed');
     }
 
-    if (!course.offeredSemesters.includes(selectedSemester)) {
+    if (course.offeredSemesters.length > 0 && !course.offeredSemesters.includes(selectedSemester)) {
       reasons.push(`Not offered in ${selectedSemester}`);
     }
 
-    const missingPrereqs = course.prerequisites.filter((p) => !completedCoursesData.includes(p));
+    const missingPrereqs = course.prerequisites.filter((p) => !completedCourseCodes.includes(p));
     if (missingPrereqs.length > 0) {
       reasons.push(`Missing prerequisites: ${missingPrereqs.join(', ')}`);
     }
@@ -153,14 +282,14 @@ function CourseEligibility() {
 
   // Split courses
   const eligible = useMemo(() => {
-    return coursesMockData.filter((c) => isCourseEligible(c));
-  }, [selectedSemester, selectedCredits]);
+    return courses.filter((c) => isCourseEligible(c));
+  }, [courses, selectedSemester, selectedCredits, completedCourseCodes, remainingCredits]);
 
   const notEligible = useMemo(() => {
-    return coursesMockData
+    return courses
       .filter((c) => !isCourseEligible(c))
       .map((c) => ({ course: c, reasons: getNotEligibleReasons(c) }));
-  }, [selectedSemester, selectedCredits]);
+  }, [courses, selectedSemester, selectedCredits, completedCourseCodes, remainingCredits]);
 
   // Toggle course selection
   function toggleCourse(courseCode) {
@@ -174,22 +303,9 @@ function CourseEligibility() {
     }
   }
 
-  // Smart study plan
-  function generateSmartPlan() {
-    const recommended = eligible
-      .filter((c) => !selectedCourses.includes(c.code))
-      .sort((a, b) => {
-        // Prefer courses with fewer prerequisites satisfied
-        const aPrereqsSat = a.prerequisites.filter((p) => completedCoursesData.includes(p)).length;
-        const bPrereqsSat = b.prerequisites.filter((p) => completedCoursesData.includes(p)).length;
-        return aPrereqsSat - bPrereqsSat;
-      })
-      .slice(0, 3);
-
-    setSelectedCourses([...selectedCourses, ...recommended.map((c) => c.code)]);
-  }
-
-  const selectedCourseDetails = selectedCourses.map((code) => coursesMockData.find((c) => c.code === code)).filter(Boolean);
+  const selectedCourseDetails = selectedCourses
+    .map((code) => courses.find((c) => c.code === code))
+    .filter(Boolean);
 
   return (
     <div className="ce-container">
@@ -205,7 +321,7 @@ function CourseEligibility() {
         <div className="ce-overview-grid">
           <div className="ce-overview-item">
             <div className="ce-overview-label">Current GPA</div>
-            <div className="ce-overview-value">{studentMockData.gpa}</div>
+            <div className="ce-overview-value">{currentGpa}</div>
           </div>
           <div className="ce-overview-item">
             <div className="ce-overview-label">Graduation Requirement</div>
@@ -213,11 +329,11 @@ function CourseEligibility() {
           </div>
           <div className="ce-overview-item">
             <div className="ce-overview-label">Max Allowed Credits</div>
-            <div className="ce-overview-value">{studentMockData.maxAllowedCredits}</div>
+            <div className="ce-overview-value">{maxAllowedCredits}</div>
           </div>
           <div className="ce-overview-item">
             <div className="ce-overview-label">Currently Registered</div>
-            <div className="ce-overview-value">{studentMockData.currentlyRegisteredCredits}</div>
+            <div className="ce-overview-value">{currentlyRegisteredCredits}</div>
           </div>
           <div className="ce-overview-item">
             <div className="ce-overview-label">Remaining Allowed</div>
@@ -251,66 +367,127 @@ function CourseEligibility() {
         <div className="ce-main">
           {/* Eligible Courses */}
           <section className="ce-section">
-            <h3 className="ce-section-title">✅ Eligible Courses</h3>
+            <div className="ce-section-header-row">
+              <h3 className="ce-section-title">✅ Eligible Courses</h3>
+              {eligible.length > 3 && (
+                <button
+                  type="button"
+                  className="ce-view-toggle"
+                  onClick={() => setShowAllEligible((v) => !v)}
+                >
+                  {showAllEligible ? 'Show less' : 'View all'}
+                </button>
+              )}
+            </div>
             {eligible.length === 0 ? (
               <div className="ce-empty-state">No eligible courses for {selectedSemester}</div>
             ) : (
               <div className="ce-course-list">
-                {eligible.map((course) => (
-                  <div key={course.code} className="ce-course-card ce-eligible">
-                    <div className="ce-course-header">
-                      <div>
-                        <div className="ce-course-code">{course.code}</div>
+                {(showAllEligible ? eligible : eligible.slice(0, 3)).map((course) => {
+                  const isExpanded = expandedCourseCode === course.code;
+                  return (
+                    <div key={course.code} className="ce-course-card ce-eligible">
+                      <div className="ce-course-header">
                         <div className="ce-course-name">{course.name}</div>
+                        <div className="ce-course-actions">
+                          <button
+                            onClick={() => toggleCourse(course.code)}
+                            className={`ce-btn ce-btn-select ${selectedCourses.includes(course.code) ? 'selected' : ''}`}
+                          >
+                            {selectedCourses.includes(course.code) ? '✓ Selected' : 'Select Course'}
+                          </button>
+                          <button
+                            type="button"
+                            className="ce-btn ce-btn-details"
+                            onClick={() =>
+                              setExpandedCourseCode(isExpanded ? null : course.code)
+                            }
+                          >
+                            {isExpanded ? 'Hide Details' : 'View Details'}
+                          </button>
+                        </div>
                       </div>
-                      <div className="ce-course-credits">{course.credits} cr</div>
+                      {isExpanded && (
+                        <div className="ce-course-details">
+                          <div>Course ID: {course.code}</div>
+                          <div>Credit hours: {course.credits}</div>
+                          <div>
+                            Prerequisites:{' '}
+                            {course.prerequisites.length === 0
+                              ? 'None'
+                              : course.prerequisites.join(', ')}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="ce-course-info">
-                      <div className="ce-course-schedule">{course.schedule}</div>
-                      <div className="ce-course-prereqs">
-                        Prerequisites: {course.prerequisites.length === 0 ? 'None' : course.prerequisites.join(', ')}
-                      </div>
-                    </div>
-                    <div className="ce-course-description">{course.description}</div>
-                    <div className="ce-course-actions">
-                      <button
-                        onClick={() => toggleCourse(course.code)}
-                        className={`ce-btn ce-btn-select ${selectedCourses.includes(course.code) ? 'selected' : ''}`}
-                      >
-                        {selectedCourses.includes(course.code) ? '✓ Selected' : 'Select Course'}
-                      </button>
-                      <button className="ce-btn ce-btn-details">View Details</button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
 
           {/* Not Eligible Courses */}
           <section className="ce-section">
-            <h3 className="ce-section-title">❌ Not Eligible Courses</h3>
+            <div className="ce-section-header-row">
+              <h3 className="ce-section-title">❌ Not Eligible Courses</h3>
+              {notEligible.length > 3 && (
+                <button
+                  type="button"
+                  className="ce-view-toggle"
+                  onClick={() => setShowAllNotEligible((v) => !v)}
+                >
+                  {showAllNotEligible ? 'Show less' : 'View all'}
+                </button>
+              )}
+            </div>
             {notEligible.length === 0 ? (
               <div className="ce-empty-state">All courses are eligible!</div>
             ) : (
               <div className="ce-course-list">
-                {notEligible.map(({ course, reasons }) => (
-                  <div key={course.code} className="ce-course-card ce-not-eligible">
-                    <div className="ce-course-header">
-                      <div>
-                        <div className="ce-course-code">{course.code}</div>
-                        <div className="ce-course-name">{course.name}</div>
-                      </div>
-                    </div>
-                    <div className="ce-course-reasons">
-                      {reasons.map((reason, idx) => (
-                        <div key={idx} className="ce-reason">
-                          ✕ {reason}
+                {(showAllNotEligible ? notEligible : notEligible.slice(0, 3)).map(
+                  ({ course, reasons }) => {
+                    const isExpanded = expandedCourseCode === course.code;
+                    return (
+                      <div key={course.code} className="ce-course-card ce-not-eligible">
+                        <div className="ce-course-header">
+                          <div className="ce-course-name">{course.name}</div>
+                          <div className="ce-course-actions">
+                            <button
+                              type="button"
+                              className="ce-btn ce-btn-details"
+                              onClick={() =>
+                                setExpandedCourseCode(isExpanded ? null : course.code)
+                              }
+                            >
+                              {isExpanded ? 'Hide Details' : 'View Details'}
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                        {isExpanded && (
+                          <div className="ce-course-details">
+                            <div>Course ID: {course.code}</div>
+                            <div>Credit hours: {course.credits}</div>
+                            <div>
+                              Prerequisites:{' '}
+                              {course.prerequisites.length === 0
+                                ? 'None'
+                                : course.prerequisites.join(', ')}
+                            </div>
+                            {reasons.length > 0 && (
+                              <div className="ce-course-reasons">
+                                {reasons.map((reason, idx) => (
+                                  <div key={idx} className="ce-reason">
+                                    ✕ {reason}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  },
+                )}
               </div>
             )}
           </section>
@@ -368,12 +545,6 @@ function CourseEligibility() {
 
             {remainingAfterSelection < 0 && (
               <div className="ce-warning">⚠ You exceeded maximum credit hours by {Math.abs(remainingAfterSelection)} credits</div>
-            )}
-
-            {selectedCourses.length > 0 && (
-              <button onClick={generateSmartPlan} className="ce-btn-smart">
-                Generate Smart Study Plan
-              </button>
             )}
 
             {selectedCourses.length > 0 && (

@@ -79,7 +79,7 @@
 
 .gp-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #1e293b, #334155);
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
   transition: width 0.3s ease;
 }
 
@@ -149,6 +149,27 @@
   border: 1px solid rgba(30, 41, 59, 0.04);
 }
 
+.gp-remaining-select {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gp-remaining-select label {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.gp-remaining-select select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+  background: #ffffff;
+  color: #111827;
+}
+
 @media (max-width: 768px) {
   .gp-stat-row {
     grid-template-columns: 1fr 1fr;
@@ -198,8 +219,8 @@
 }
 
 .gp-add-btn {
-  background: #1e293b;
-  color: #fff;
+  background: #2563eb;
+  color: #ffffff;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -210,7 +231,7 @@
 }
 
 .gp-add-btn:hover {
-  background: #334155;
+  background: #1d4ed8;
 }
 
 .gp-add-form {
@@ -239,8 +260,8 @@
 
 .gp-form-row button {
   padding: 0.5rem 1rem;
-  background: #1e293b;
-  color: #fff;
+  background: #2563eb;
+  color: #ffffff;
   border: none;
   border-radius: 4px;
   cursor: pointer;

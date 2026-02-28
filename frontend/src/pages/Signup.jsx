@@ -21,7 +21,7 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [studentId, setStudentId] = useState('');
-  const [department, setDepartment] = useState('computer_science');
+  const [department, setDepartment] = useState('CS');
   const [semester, setSemester] = useState(3);
   const [role, setRole] = useState(ROLES.STUDENT);
   const [error, setError] = useState('');

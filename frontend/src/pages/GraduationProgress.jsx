@@ -40,7 +40,15 @@ const DEPARTMENT_LABELS = {
   'IT': 'BS Information Technology',
 };
 
-
+function normalizeDepartmentCode(value) {
+  if (!value) return null;
+  const raw = String(value).toUpperCase();
+  if (raw === 'COMPUTER_SCIENCE' || raw === 'COMPUTER SCIENCE') return 'CS';
+  if (raw === 'INFORMATION_SYSTEM' || raw === 'INFORMATION SYSTEM') return 'IS';
+  if (raw === 'INFORMATION_TECHNOLOGY' || raw === 'INFORMATION TECHNOLOGY') return 'IT';
+  if (['CS', 'IS', 'IT'].includes(raw)) return raw;
+  return null;
+}
 
 function getStatusIndicator(status) {
   const map = {
@@ -61,16 +69,39 @@ function GraduationProgress() {
   const [remainingCourses, setRemainingCourses] = useState([]);
 
   useEffect(() => {
-    if (!user?.department) return;
-
     const fetchCourses = async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .ilike('department', `%${user.department}%`);
+      const normalizedDept = normalizeDepartmentCode(user?.department);
 
-      if (!error) {
+      let data = null;
+      let error = null;
+
+      // 1) If we have a normalized department, try fetching by that code.
+      if (normalizedDept) {
+        const res = await supabase
+          .from('courses')
+          .select('*')
+          .eq('department', normalizedDept);
+        data = res.data;
+        error = res.error;
+      } else if (user?.department) {
+        // 2) Fallback: try a loose match on whatever is stored.
+        const res = await supabase
+          .from('courses')
+          .select('*')
+          .ilike('department', `%${user.department}%`);
+        data = res.data;
+        error = res.error;
+      }
+
+      // 3) If we still have no courses, fetch all so the select is never empty.
+      if (!error && Array.isArray(data) && data.length > 0) {
         setAllCourses(data);
+        return;
+      }
+
+      const fallback = await supabase.from('courses').select('*');
+      if (!fallback.error && Array.isArray(fallback.data)) {
+        setAllCourses(fallback.data);
       }
     };
 
@@ -133,7 +164,9 @@ function GraduationProgress() {
   }, [allCourses, completedCourses]);
 
   const totalCreditsRequired = useMemo(() => {
-    return DEPARTMENT_CREDITS[user?.department];
+    const code = normalizeDepartmentCode(user?.department);
+    if (!code) return 0;
+    return DEPARTMENT_CREDITS[code] ?? 0;
   }, [user]);
 
   const totalCreditsCompleted = useMemo(() => {
@@ -148,6 +181,7 @@ function GraduationProgress() {
   }, [completedCourses]);
 
   const creditPercentage = useMemo(() => {
+    if (!totalCreditsRequired) return 0;
     return Math.round((totalCreditsCompleted / totalCreditsRequired) * 100);
   }, [totalCreditsCompleted, totalCreditsRequired]);
 
@@ -171,7 +205,27 @@ function GraduationProgress() {
   const handleAddOrUpdateCourse = async () => {
     if (!newCourse.code || !newCourse.grade) return;
 
-    const selectedCourse = allCourses.find(c => c.course_code === newCourse.code);
+    let selectedCourse = allCourses.find(c => c.course_code === newCourse.code);
+
+    // If the course doesn't exist yet (manual entry), create it first.
+    if (!selectedCourse && newCourse.code !== 'CUSTOM') {
+      const { data: created, error: createError } = await supabase
+        .from('courses')
+        .insert([{
+          course_code: newCourse.code,
+          course_title: newCourse.name || newCourse.code,
+          credit_hours: newCourse.credits || 3,
+          department: user?.department || null,
+        }])
+        .select('*')
+        .single();
+
+      if (createError || !created) return;
+
+      selectedCourse = created;
+      setAllCourses(prev => [...prev, created]);
+    }
+
     if (!selectedCourse) return;
 
     const { error } = await supabase
@@ -274,7 +328,7 @@ function GraduationProgress() {
             <div className="gp-progress-fill" style={{ width: `${creditPercentage}%` }} />
           </div>
           <div style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
-            {totalCreditsCompleted} of {INITIAL_STUDENT_DATA.totalCreditsRequired} credits completed
+            {totalCreditsCompleted} of {totalCreditsRequired} credits completed
           </div>
         </div>
       </div>
@@ -328,7 +382,7 @@ function GraduationProgress() {
         </div>
         <div className="gp-card-body">
           <div className="gp-course-list">
-            {remainingCourses.map((course) => {
+            {remainingCourses.slice(0, 3).map((course) => {
               const ind = getStatusIndicator(course.status);
               return (
                 <div key={course.code} className="gp-course-item">
@@ -344,6 +398,19 @@ function GraduationProgress() {
               );
             })}
           </div>
+
+          {remainingCourses.length > 3 && (
+            <div className="gp-remaining-select">
+              <label htmlFor="remaining-select">All remaining courses</label>
+              <select id="remaining-select">
+                {remainingCourses.map((course) => (
+                  <option key={course.code} value={course.code}>
+                    {course.code} - {course.name} ({course.credits} C.H)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -364,7 +431,14 @@ function GraduationProgress() {
                 <select
                   value={newCourse.code}
                   onChange={(e) => {
-                    const selected = remainingCourses.find(c => c.code === e.target.value) || { code: '', name: '', credits: 3 };
+                    const value = e.target.value;
+
+                    if (value === 'CUSTOM') {
+                      setNewCourse({ ...newCourse, code: 'CUSTOM', name: '', credits: 3 });
+                      return;
+                    }
+
+                    const selected = remainingCourses.find(c => c.code === value) || { code: '', name: '', credits: 3 };
                     setNewCourse({ ...newCourse, code: selected.code, name: selected.name, credits: selected.credits });
                   }}
                 >
