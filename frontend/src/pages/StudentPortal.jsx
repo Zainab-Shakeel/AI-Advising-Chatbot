@@ -87,38 +87,45 @@ export default function StudentPortal() {
     navigate('/login', { replace: true });
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
 
-    if (!message.trim()) return;
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
 
-    const userMessage = {
-      profile_id: user.id,
-      role: "user",
-      message: message,
-    };
+    try {
+      const response = await fetch(
+        "https://ai-advising-chatbot-backend.onrender.com/chat",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: input,
+            userId: "student123", // you can later replace with real logged-in user id
+          }),
+        }
+      );
 
-    // Save user message
-    await supabase.from("chat_messages").insert([userMessage]);
+      const data = await response.json();
 
-    // Fake bot reply for now
-    const botReply = {
-      profile_id: user.id,
-      role: "bot",
-      message: "This is a demo AI response.",
-    };
+      const botMessage = {
+        sender: "bot",
+        text: data.reply,
+      };
 
-    await supabase.from("chat_messages").insert([botReply]);
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Error:", error);
 
-    // Refresh messages
-    const { data } = await supabase
-      .from("chat_messages")
-      .select("*")
-      .eq("profile_id", user.id)
-      .order("created_at", { ascending: true });
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Server error. Please try again." },
+      ]);
+    }
 
-    setMessages(data);
-    setMessage("");
+    setInput("");
   };
 
   const handleSuggestedAction = (action) => {
