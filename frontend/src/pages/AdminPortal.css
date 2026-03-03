@@ -404,13 +404,30 @@
     flex-direction: column;
     padding: 1rem;
     align-items: center;
+    padding-bottom: 80px;
+    /* space for the bottom tab bar */
   }
 
+  /* Sidebar becomes a fixed bottom tab bar */
   .admin-sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    border-radius: 12px;
-    margin-bottom: 1rem;
-    padding: 1rem 0;
+    z-index: 100;
+    border-radius: 0;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: none;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    padding: 0;
+    margin-bottom: 0;
+    flex-direction: row;
+  }
+
+  /* Hide the Admin Menu title on mobile */
+  .admin-sidebar-title {
+    display: none;
   }
 
   .admin-content-card {
@@ -420,25 +437,36 @@
     min-height: auto;
   }
 
+  /* Nav items fill the bottom bar equally */
   .admin-nav {
     flex-direction: row;
-    overflow-x: auto;
-    padding: 0 1rem;
-    gap: 0.5rem;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .admin-nav::-webkit-scrollbar {
-    display: none;
+    width: 100%;
+    gap: 0;
   }
 
   .admin-nav-item {
-    white-space: nowrap;
-    width: auto;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0.6rem 0.25rem;
+    border-radius: 0;
+    font-size: 0.7rem;
+    white-space: normal;
+    text-align: center;
+    border-top: 3px solid transparent;
+  }
+
+  .admin-nav-item.active-nav-item {
+    border-top: 3px solid #076A07;
+    background: #f0fdf4;
+    color: #076A07;
+  }
+
+  /* Make icons bigger and labels wrap gracefully */
+  .admin-nav-item span:first-child {
+    font-size: 1.3rem;
   }
 
   .gpa-table-header {
