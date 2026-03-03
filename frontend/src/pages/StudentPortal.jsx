@@ -87,10 +87,17 @@ export default function StudentPortal() {
     navigate('/login', { replace: true });
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
+  const handleSendMessage = async (e) => {
+    e.preventDefault();   // prevent redirect
 
-    const userMessage = { sender: "user", text: input };
+    if (!message.trim()) return;
+
+    const userMessage = {
+      id: Date.now(),
+      role: "user",
+      message: message,
+    };
+
     setMessages((prev) => [...prev, userMessage]);
 
     try {
@@ -102,8 +109,8 @@ export default function StudentPortal() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: input,
-            userId: "student123", // you can later replace with real logged-in user id
+            message: message,
+            userId: user?.id,
           }),
         }
       );
@@ -111,8 +118,9 @@ export default function StudentPortal() {
       const data = await response.json();
 
       const botMessage = {
-        sender: "bot",
-        text: data.reply,
+        id: Date.now() + 1,
+        role: "bot",
+        message: data.reply,
       };
 
       setMessages((prev) => [...prev, botMessage]);
@@ -121,11 +129,15 @@ export default function StudentPortal() {
 
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "Server error. Please try again." },
+        {
+          id: Date.now() + 2,
+          role: "bot",
+          message: "Server error. Please try again.",
+        },
       ]);
     }
 
-    setInput("");
+    setMessage("");   // clear input correctly
   };
 
   const handleSuggestedAction = (action) => {
@@ -279,8 +291,7 @@ export default function StudentPortal() {
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`message ${msg.role === "user" ? "user-message" : "bot-message"
-                      }`}
+                    className={`message ${msg.role === "user" ? "user-message" : "bot-message"}`}
                   >
                     {msg.message}
                   </div>
