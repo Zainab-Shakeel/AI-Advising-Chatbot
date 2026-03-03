@@ -304,6 +304,7 @@ function StudentRecordsView() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [completedCourses, setCompletedCourses] = useState([]);
   const [loadingTranscript, setLoadingTranscript] = useState(false);
+  const [transcriptError, setTranscriptError] = useState(null);
 
   // Fetch all enrolled students
   useEffect(() => {
@@ -331,11 +332,13 @@ function StudentRecordsView() {
 
     async function fetchTranscript() {
       setLoadingTranscript(true);
+      setTranscriptError(null);
       try {
         const { data, error } = await supabase
           .from('student_courses')
           .select(`
             id,
+            status,
             grade,
             courses:course_id (
               course_code,
@@ -343,10 +346,13 @@ function StudentRecordsView() {
               credit_hours
             )
           `)
-          .eq('student_id', selectedStudent.id)
-          .ilike('status', 'completed');
+          .eq('student_id', selectedStudent.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Transcript DB error:', error);
+          setTranscriptError(`DB Error: ${error.message}`);
+          return;
+        }
 
         // Map data to a flat structure for rendering
         const formatted = (data || []).map(record => ({
@@ -354,12 +360,14 @@ function StudentRecordsView() {
           code: record.courses?.course_code || 'Unknown',
           name: record.courses?.course_title || 'Unknown Course',
           credits: record.courses?.credit_hours || 0,
-          grade: record.grade || 'N/A'
+          grade: record.grade || 'N/A',
+          status: record.status || 'N/A'
         }));
 
         setCompletedCourses(formatted);
       } catch (err) {
         console.error('Error fetching transcript:', err);
+        setTranscriptError(err.message);
       } finally {
         setLoadingTranscript(false);
       }
@@ -437,6 +445,7 @@ function StudentRecordsView() {
                     <th>Course Code</th>
                     <th>Course Name</th>
                     <th>Credits</th>
+                    <th>Status</th>
                     <th>Grade</th>
                   </tr>
                 </thead>
@@ -446,16 +455,35 @@ function StudentRecordsView() {
                       <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Loading transcript...</td>
                     </tr>
                   )}
-                  {!loadingTranscript && completedCourses.length === 0 && (
+                  {transcriptError && (
                     <tr>
-                      <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No completed courses found for this student.</td>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#b91c1c', background: '#fee2e2' }}>
+                        ⚠️ {transcriptError} — This may be an RLS (Row-Level Security) permission issue. Ask your admin to grant SELECT access on student_courses.
+                      </td>
                     </tr>
                   )}
-                  {!loadingTranscript && completedCourses.map((course) => (
+                  {!loadingTranscript && !transcriptError && completedCourses.length === 0 && (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No courses found for this student.</td>
+                    </tr>
+                  )}
+                  {!loadingTranscript && !transcriptError && completedCourses.map((course) => (
                     <tr key={course.id}>
                       <td><strong>{course.code}</strong></td>
                       <td>{course.name}</td>
                       <td>{course.credits}</td>
+                      <td>
+                        <span style={{
+                          background: course.status?.toLowerCase() === 'completed' ? '#dcfce7' : '#f1f5f9',
+                          color: course.status?.toLowerCase() === 'completed' ? '#15803d' : '#64748b',
+                          padding: '3px 10px',
+                          borderRadius: '999px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600
+                        }}>
+                          {course.status}
+                        </span>
+                      </td>
                       <td><span style={{ fontWeight: 600, color: '#076A07' }}>{course.grade}</span></td>
                     </tr>
                   ))}
