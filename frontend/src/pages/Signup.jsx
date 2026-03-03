@@ -42,8 +42,8 @@ export default function Signup() {
       setError('Please enter your email');
       return;
     }
-    if (!isValidOfficialEmail(emailTrimmed)) {
-      setError('Please use an official university email (e.g. @student.kau.edu.sa)');
+    if (!isValidOfficialEmail(emailTrimmed, role)) {
+      setError(`Please use an official ${isStudent ? 'student' : 'admin'} email (e.g. ${isStudent ? '@student.kau.edu.sa' : '@admin.kau.edu.sa'})`);
       return;
     }
     if (!usernameTrimmed) {
@@ -66,8 +66,8 @@ export default function Signup() {
       setError('Passwords do not match');
       return;
     }
-    if (isStudent && !studentIdTrimmed) {
-      setError('Please enter your student ID');
+    if (!studentIdTrimmed) {
+      setError(isStudent ? 'Please enter your student ID' : 'Please enter your Admin ID');
       return;
     }
     if (isStudent && !department) {
@@ -83,7 +83,7 @@ export default function Signup() {
       email: emailTrimmed,
       username: usernameTrimmed,
       password,
-      studentId: isStudent ? studentIdTrimmed : '',
+      studentId: studentIdTrimmed,
       department: isStudent ? department : '',
       semester: isStudent ? semester : null,
       role,
@@ -128,7 +128,7 @@ export default function Signup() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@student.kau.edu.sa"
+              placeholder={isStudent ? "name@student.kau.edu.sa" : "name@admin.kau.edu.sa"}
               autoComplete="email"
             />
             <span className="field-hint">Use your university email</span>
@@ -147,19 +147,20 @@ export default function Signup() {
             />
           </div>
 
+          <div className="form-group">
+            <label htmlFor="studentId">{isStudent ? 'Student ID' : 'Admin ID'}</label>
+            <input
+              id="studentId"
+              type="text"
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              placeholder={isStudent ? "Enter your student ID" : "Enter your admin ID"}
+              autoComplete="off"
+            />
+          </div>
+
           {isStudent && (
             <>
-              <div className="form-group">
-                <label htmlFor="studentId">Student ID</label>
-                <input
-                  id="studentId"
-                  type="text"
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                  placeholder="Enter your student ID"
-                  autoComplete="off"
-                />
-              </div>
               <div className="form-group">
                 <label htmlFor="department">Department</label>
                 <select

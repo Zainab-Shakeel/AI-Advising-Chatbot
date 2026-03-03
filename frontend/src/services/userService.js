@@ -5,15 +5,15 @@ export const ROLES = {
   SYSTEM_ADMIN: "system_admin",
 };
 
-const ALLOWED_EMAIL_DOMAINS = ["student.kau.edu.sa"];
-
-export function isValidOfficialEmail(email) {
+export function isValidOfficialEmail(email, role) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email?.trim())) return false;
   const domain = email.split("@")[1]?.toLowerCase() || "";
-  return ALLOWED_EMAIL_DOMAINS.some((suffix) =>
-    domain.endsWith(suffix)
-  );
+
+  if (role === ROLES.SYSTEM_ADMIN) {
+    return domain === "admin.kau.edu.sa" || domain === "admin.kau.eu.sa";
+  }
+  return domain === "student.kau.edu.sa" || domain === "student.kau.eu.sa";
 }
 
 /* ===========================
@@ -72,42 +72,42 @@ export async function signUp({
    LOGIN
    =========================== */
 
-   export async function loginByCredentials(email, password) {
-    try {
-      // 1️⃣ Sign in with Supabase Auth
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-  
-      if (authError) {
-        return { success: false, error: authError.message };
-      }
-  
-      const user = authData.user;
-  
-      // 2️⃣ Fetch user profile from profiles table
-      const { data: profile, error: profileError } =
-        await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-  
-      if (profileError) {
-        return { success: false, error: profileError.message };
-      }
-  
-      // 3️⃣ Return profile (contains role, student_id, etc)
-      return {
-        success: true,
-        user: profile,
-      };
-    } catch (err) {
-      return { success: false, error: "Login failed" };
+export async function loginByCredentials(email, password) {
+  try {
+    // 1️⃣ Sign in with Supabase Auth
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+    if (authError) {
+      return { success: false, error: authError.message };
     }
+
+    const user = authData.user;
+
+    // 2️⃣ Fetch user profile from profiles table
+    const { data: profile, error: profileError } =
+      await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+    if (profileError) {
+      return { success: false, error: profileError.message };
+    }
+
+    // 3️⃣ Return profile (contains role, student_id, etc)
+    return {
+      success: true,
+      user: profile,
+    };
+  } catch (err) {
+    return { success: false, error: "Login failed" };
   }
+}
 
 /* ===========================
    LOGOUT
