@@ -162,10 +162,9 @@ function CourseManagementView() {
       const payload = {
         course_code: editFormData.course_code,
         course_title: editFormData.course_title,
+        department: editFormData.department || 'CS',
         credit_hours: parseInt(editFormData.credit_hours, 10) || 3,
         prerequisites: editFormData.prerequisites || null
-        // Note: Supabase 'courses' table might not have department column mapped yet.
-        // If it does not, sending department here would cause an error.
       };
 
       if (isNewEntry) {

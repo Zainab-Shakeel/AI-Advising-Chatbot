@@ -60,6 +60,20 @@ function normalizePrerequisites(raw) {
   return [];
 }
 
+function normalizeOfferedSemesters(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.map((item) => String(item).trim().toLowerCase()).filter(Boolean);
+  }
+  if (typeof raw === 'string') {
+    return raw
+      .split(/[,;]+/)
+      .map((item) => String(item).trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 function CourseEligibility() {
   const { user } = useAuth();
   const [selectedSemester, setSelectedSemester] = useState('Fall 2026');
@@ -91,14 +105,42 @@ function CourseEligibility() {
         error = res.error;
       }
 
+      // If we have department-specific courses, also load prerequisite courses from other departments
       if (!error && Array.isArray(data) && data.length > 0) {
+        const courseMap = {};
+        const prerequisiteCodes = new Set();
+
+        // First pass: collect all courses and extract prerequisite codes
+        data.forEach((row) => {
+          courseMap[row.course_code] = row;
+          const prereqs = normalizePrerequisites(row.prerequisites);
+          prereqs.forEach((p) => prerequisiteCodes.add(p));
+        });
+
+        // Load prerequisite courses if any are missing
+        if (prerequisiteCodes.size > 0) {
+          const { data: prereqData, error: prereqError } = await supabase
+            .from('courses')
+            .select('*')
+            .in('course_code', Array.from(prerequisiteCodes));
+
+          if (!prereqError && Array.isArray(prereqData)) {
+            prereqData.forEach((row) => {
+              if (!courseMap[row.course_code]) {
+                courseMap[row.course_code] = row;
+                data.push(row);
+              }
+            });
+          }
+        }
+
         setCourses(
           data.map((row) => ({
             code: row.course_code,
             name: row.course_title,
             credits: row.credit_hours,
             prerequisites: normalizePrerequisites(row.prerequisites),
-            offeredSemesters: row.offered_semesters || [],
+            offeredSemesters: normalizeOfferedSemesters(row.offered_semesters),
             schedule: row.schedule || '',
             description: row.description || '',
           })),
@@ -114,7 +156,7 @@ function CourseEligibility() {
             name: row.course_title,
             credits: row.credit_hours,
             prerequisites: normalizePrerequisites(row.prerequisites),
-            offeredSemesters: row.offered_semesters || [],
+            offeredSemesters: normalizeOfferedSemesters(row.offered_semesters),
             schedule: row.schedule || '',
             description: row.description || '',
           })),
@@ -187,6 +229,21 @@ function CourseEligibility() {
     [studentCourses],
   );
 
+  const completedCourseCodes = useMemo(
+    () => studentCourses.filter((c) => c.status === 'completed').map((c) => c.code),
+    [studentCourses],
+  );
+
+  const normalizedCompletedCourseSet = useMemo(
+    () => new Set(completedCourseCodes.map((code) => normalizeCode(code))),
+    [completedCourseCodes],
+  );
+
+  const normalizedSelectedCourseSet = useMemo(
+    () => new Set(selectedCourses.map((code) => normalizeCode(code))),
+    [selectedCourses],
+  );
+
   const currentGpa = useMemo(() => {
     const totalPoints = completedForGpa.reduce(
       (sum, c) => sum + (parseFloat(c.grade) * c.credits || 0),
@@ -231,44 +288,51 @@ function CourseEligibility() {
     return remainingCredits - selectedCredits;
   }, [selectedCredits, remainingCredits]);
 
-  const completedCourseCodes = useMemo(
-    () => studentCourses.filter((c) => c.status === 'completed').map((c) => c.code),
-    [studentCourses],
-  );
+  function hasPrereqsSatisfied(course) {
+    if (!course.prerequisites || course.prerequisites.length === 0) {
+      return true;
+    }
+
+    return course.prerequisites.every((prereq) => {
+      const normalizedPrereq = normalizeCode(prereq);
+      return (
+        normalizedCompletedCourseSet.has(normalizedPrereq) ||
+        normalizedSelectedCourseSet.has(normalizedPrereq)
+      );
+    });
+  }
 
   // Check if course is eligible
   function isCourseEligible(course) {
     // Already completed
-    if (completedCourseCodes.includes(course.code)) return false;
+    if (normalizedCompletedCourseSet.has(normalizeCode(course.code))) return false;
 
-    // Not offered in selected semester (if we have offering data)
-    if (course.offeredSemesters.length > 0 && !course.offeredSemesters.includes(selectedSemester)) {
-      return false;
-    }
+    if (!hasPrereqsSatisfied(course)) return false;
 
-    // Missing prerequisites
-    const hasMissingPrereqs = course.prerequisites.some((p) => !completedCourseCodes.includes(p));
-    if (hasMissingPrereqs) return false;
-
-    // Would exceed credit limit
+    // Credit check
     if (selectedCredits + course.credits > remainingCredits) return false;
 
     return true;
   }
 
+function normalizeCode(code) {
+  return String(code).replace(/[^A-Z0-9]/gi, '').toUpperCase();
+}
   // Get eligibility reasons
   function getNotEligibleReasons(course) {
     const reasons = [];
 
-    if (completedCourseCodes.includes(course.code)) {
+    if (normalizedCompletedCourseSet.has(normalizeCode(course.code))) {
       reasons.push('Already completed');
     }
 
-    if (course.offeredSemesters.length > 0 && !course.offeredSemesters.includes(selectedSemester)) {
-      reasons.push(`Not offered in ${selectedSemester}`);
-    }
-
-    const missingPrereqs = course.prerequisites.filter((p) => !completedCourseCodes.includes(p));
+    const missingPrereqs = course.prerequisites.filter((prereq) => {
+      const normalizedPrereq = normalizeCode(prereq);
+      return (
+        !normalizedCompletedCourseSet.has(normalizedPrereq) &&
+        !normalizedSelectedCourseSet.has(normalizedPrereq)
+      );
+    });
     if (missingPrereqs.length > 0) {
       reasons.push(`Missing prerequisites: ${missingPrereqs.join(', ')}`);
     }
@@ -282,14 +346,39 @@ function CourseEligibility() {
 
   // Split courses
   const eligible = useMemo(() => {
-    return courses.filter((c) => isCourseEligible(c));
-  }, [courses, selectedSemester, selectedCredits, completedCourseCodes, remainingCredits]);
+    return courses
+      .filter((c) => isCourseEligible(c))
+      .sort((a, b) => {
+        const aNoPrereq = a.prerequisites.length === 0 ? 0 : 1;
+        const bNoPrereq = b.prerequisites.length === 0 ? 0 : 1;
+
+        if (aNoPrereq !== bNoPrereq) {
+          return aNoPrereq - bNoPrereq;
+        }
+
+        return a.code.localeCompare(b.code);
+      });
+  }, [
+    courses,
+    selectedSemester,
+    selectedCredits,
+    completedCourseCodes,
+    remainingCredits,
+    selectedCourses,
+  ]);
 
   const notEligible = useMemo(() => {
-    return courses
-      .filter((c) => !isCourseEligible(c))
-      .map((c) => ({ course: c, reasons: getNotEligibleReasons(c) }));
-  }, [courses, selectedSemester, selectedCredits, completedCourseCodes, remainingCredits]);
+  return courses
+    .filter((c) => !isCourseEligible(c))
+    .map((c) => ({ course: c, reasons: getNotEligibleReasons(c) }));
+}, [
+  courses,
+  selectedSemester,
+  selectedCredits,
+  completedCourseCodes,
+  remainingCredits,
+  selectedCourses,
+]);
 
   // Toggle course selection
   function toggleCourse(courseCode) {
@@ -351,16 +440,7 @@ function CourseEligibility() {
       </div>
 
       {/* Semester Selector */}
-      <div className="ce-semester-section">
-        <label className="ce-semester-label">
-          Select Semester:
-          <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} className="ce-semester-select">
-            <option>Fall 2026</option>
-            <option>Spring 2027</option>
-            <option>Summer 2027</option>
-          </select>
-        </label>
-      </div>
+      
 
       <div className="ce-grid">
         {/* Main Content */}
